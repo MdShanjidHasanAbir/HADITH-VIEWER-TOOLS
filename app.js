@@ -210,25 +210,110 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseXlsxToCollection(workbook) {
-        const sheetNames = workbook.SheetNames.map(n => n.toLowerCase());
-
         let chapterSheet = null;
         let sectionSheet = null;
         let hadithSheet = null;
+        const parsedRowsBySheetName = {};
 
         // Find sheets by name (case-insensitive)
         for (const name of workbook.SheetNames) {
             const lowerName = name.toLowerCase();
+            const sheet = workbook.Sheets[name];
+            const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: '' }) : [];
+            parsedRowsBySheetName[name] = rows;
+
             if (lowerName.includes('chapter') && !chapterSheet) {
-                chapterSheet = workbook.Sheets[name];
+                chapterSheet = sheet;
             } else if (lowerName.includes('section') && !sectionSheet) {
-                sectionSheet = workbook.Sheets[name];
+                sectionSheet = sheet;
             } else if (lowerName.includes('hadith') && !hadithSheet) {
-                hadithSheet = workbook.Sheets[name];
+                hadithSheet = sheet;
             }
         }
 
-        // Fallback: use first three sheets if named sheets not found
+        function getSheetHeaders(rows) {
+            if (!Array.isArray(rows) || rows.length === 0 || !rows[0] || typeof rows[0] !== 'object') {
+                return [];
+            }
+            return Object.keys(rows[0]).map(k => normalizeXlsxKey(k));
+        }
+
+        function scoreSheet(headers, kind) {
+            const headerSet = new Set(headers);
+            const hasAny = (...keys) => keys.some(k => headerSet.has(k));
+
+            if (kind === 'chapter') {
+                let score = 0;
+                if (hasAny('chapter_id', 'chapterid', 'chapter', 'id')) score += 6;
+                if (hasAny('title', 'name')) score += 4;
+                if (hasAny('display_number', 'displaynumber', 'number')) score += 2;
+                if (hasAny('hadith_id', 'content', 'ar')) score -= 2;
+                return score;
+            }
+
+            if (kind === 'section') {
+                let score = 0;
+                if (hasAny('section_id', 'sectionid', 'section')) score += 6;
+                if (hasAny('chapter_id', 'chapterid', 'chapter')) score += 3;
+                if (hasAny('title', 'ar_title', 'preface')) score += 2;
+                if (hasAny('hadith_id', 'content', 'ar')) score -= 2;
+                return score;
+            }
+
+            if (kind === 'hadith') {
+                let score = 0;
+                if (hasAny('hadith_id', 'hadithid', 'hadith', 'id')) score += 6;
+                if (hasAny('chapter_id', 'chapterid', 'chapter')) score += 3;
+                if (hasAny('section_id', 'sectionid', 'section')) score += 2;
+                if (hasAny('content', 'text', 'hadith_text', 'ar', 'narrator')) score += 4;
+                return score;
+            }
+
+            return 0;
+        }
+
+        function pickBestSheet(kind, alreadyPicked = new Set()) {
+            let bestName = null;
+            let bestScore = -Infinity;
+
+            workbook.SheetNames.forEach(name => {
+                if (alreadyPicked.has(name)) return;
+                const rows = parsedRowsBySheetName[name] || [];
+                const headers = getSheetHeaders(rows);
+                const score = scoreSheet(headers, kind);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestName = name;
+                }
+            });
+
+            if (!bestName || bestScore <= 0) return null;
+            return workbook.Sheets[bestName] || null;
+        }
+
+        // Fallback: detect by headers if named sheets are missing or named unexpectedly.
+        const usedNames = new Set();
+        if (chapterSheet) usedNames.add(workbook.SheetNames.find(n => workbook.Sheets[n] === chapterSheet));
+        if (sectionSheet) usedNames.add(workbook.SheetNames.find(n => workbook.Sheets[n] === sectionSheet));
+        if (hadithSheet) usedNames.add(workbook.SheetNames.find(n => workbook.Sheets[n] === hadithSheet));
+
+        if (!chapterSheet) {
+            chapterSheet = pickBestSheet('chapter', usedNames);
+            const picked = workbook.SheetNames.find(n => workbook.Sheets[n] === chapterSheet);
+            if (picked) usedNames.add(picked);
+        }
+        if (!sectionSheet) {
+            sectionSheet = pickBestSheet('section', usedNames);
+            const picked = workbook.SheetNames.find(n => workbook.Sheets[n] === sectionSheet);
+            if (picked) usedNames.add(picked);
+        }
+        if (!hadithSheet) {
+            hadithSheet = pickBestSheet('hadith', usedNames);
+            const picked = workbook.SheetNames.find(n => workbook.Sheets[n] === hadithSheet);
+            if (picked) usedNames.add(picked);
+        }
+
+        // Final fallback: use first three sheets if still missing
         if (!chapterSheet && workbook.SheetNames[0]) {
             chapterSheet = workbook.Sheets[workbook.SheetNames[0]];
         }
@@ -239,9 +324,9 @@ document.addEventListener('DOMContentLoaded', () => {
             hadithSheet = workbook.Sheets[workbook.SheetNames[2]];
         }
 
-        const chapters = chapterSheet ? XLSX.utils.sheet_to_json(chapterSheet) : [];
-        const sections = sectionSheet ? XLSX.utils.sheet_to_json(sectionSheet) : [];
-        const hadiths = hadithSheet ? XLSX.utils.sheet_to_json(hadithSheet) : [];
+        const chapters = chapterSheet ? XLSX.utils.sheet_to_json(chapterSheet, { defval: '' }) : [];
+        const sections = sectionSheet ? XLSX.utils.sheet_to_json(sectionSheet, { defval: '' }) : [];
+        const hadiths = hadithSheet ? XLSX.utils.sheet_to_json(hadithSheet, { defval: '' }) : [];
 
         // Normalize field names and data types
         const normalizedChapters = chapters.map(row => normalizeXlsxRow(row, 'chapter'));
@@ -255,11 +340,35 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function normalizeXlsxKey(key) {
+        return String(key ?? '')
+            .replace(/^\uFEFF/, '') // Remove UTF-8 BOM if present in first header
+            .replace(/[\u200B-\u200D\u2060]/g, '') // Remove zero-width chars
+            .trim()
+            .toLowerCase()
+            .replace(/[\s./\\-]+/g, '_')
+            .replace(/_+/g, '_');
+    }
+
+    function normalizeIdForLookup(value) {
+        if (value === null || value === undefined) return '';
+
+        const banglaToAscii = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+        const raw = String(value).trim().replace(/[০-৯]/g, d => banglaToAscii[d] || d);
+        if (!raw) return '';
+
+        if (/^-?\d+(\.0+)?$/.test(raw)) {
+            return String(parseInt(raw, 10));
+        }
+        return raw.toLowerCase();
+    }
+
     function normalizeXlsxRow(row, type) {
         const normalized = {};
 
         for (const key in row) {
-            const lowerKey = key.toLowerCase().trim();
+            const lowerKey = normalizeXlsxKey(key);
+            const compactKey = lowerKey.replace(/_/g, '');
             let value = row[key];
 
             // Convert numeric strings to numbers for ID fields
@@ -272,17 +381,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Map common field names
-            if (lowerKey === 'chapter_id' || lowerKey === 'chapterid' || lowerKey === 'chapter') {
+            if (lowerKey === 'chapter_id' || compactKey === 'chapterid' || lowerKey === 'chapter') {
                 normalized.chapter_id = value;
-            } else if (lowerKey === 'section_id' || lowerKey === 'sectionid' || lowerKey === 'section') {
+            } else if (lowerKey === 'section_id' || compactKey === 'sectionid' || lowerKey === 'section') {
                 normalized.section_id = value;
-            } else if (lowerKey === 'hadith_id' || lowerKey === 'hadithid' || lowerKey === 'hadith' || lowerKey === 'id') {
+            } else if (lowerKey === 'hadith_id' || compactKey === 'hadithid' || lowerKey === 'hadith' || lowerKey === 'id') {
                 normalized.hadith_id = value;
-            } else if (lowerKey === 'display_number' || lowerKey === 'displaynumber' || lowerKey === 'number') {
+            } else if (lowerKey === 'display_number' || compactKey === 'displaynumber' || lowerKey === 'number') {
                 normalized.display_number = value;
             } else if (lowerKey === 'title' || lowerKey === 'name') {
                 normalized.title = value;
-            } else if (lowerKey === 'ar_title' || lowerKey === 'artitle' || lowerKey === 'arabic_title') {
+            } else if (lowerKey === 'ar_title' || compactKey === 'artitle' || lowerKey === 'arabic_title') {
                 normalized.ar_title = value;
             } else if (lowerKey === 'preface' || lowerKey === 'introduction' || lowerKey === 'intro') {
                 normalized.preface = value;
@@ -292,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 normalized.narrator = value;
             } else if (lowerKey === 'grade' || lowerKey === 'status') {
                 normalized.grade = value;
-            } else if (lowerKey === 'grade_id' || lowerKey === 'gradeid') {
+            } else if (lowerKey === 'grade_id' || compactKey === 'gradeid') {
                 // Convert grade_id to grade name
                 const gradeId = typeof value === 'string' ? parseInt(value.trim(), 10) : (typeof value === 'number' ? Math.floor(value) : value);
                 normalized.grade_id = gradeId;
@@ -374,12 +483,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (chapterList.length === 0 || hadithList.length === 0) return;
 
             let chapterIdMapping = {};
+            let firstInternalChapterId = null;
 
             chapterList.forEach(c => {
                 globalChapterCounter++;
                 // Use string key for consistent mapping
-                const chapterId = String(c.chapter_id ?? c.id ?? globalChapterCounter);
+                const rawChapterId = c.chapter_id ?? c.id ?? globalChapterCounter;
+                const chapterId = String(rawChapterId);
                 chapterIdMapping[chapterId] = globalChapterCounter;
+                const normalizedChapterId = normalizeIdForLookup(rawChapterId);
+                if (normalizedChapterId) {
+                    chapterIdMapping[normalizedChapterId] = globalChapterCounter;
+                }
+                if (firstInternalChapterId === null) {
+                    firstInternalChapterId = globalChapterCounter;
+                }
 
                 newBook.chapters.push({
                     ...c,
@@ -401,12 +519,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             hadithList.forEach(h => {
                 // Use string key for consistent lookup
-                const hadithChapterId = String(h.chapter_id ?? 1);
-                const mappedId = chapterIdMapping[hadithChapterId];
+                const rawHadithChapterId = h.chapter_id;
+                const hadithChapterId = String(rawHadithChapterId ?? '');
+                const normalizedHadithChapterId = normalizeIdForLookup(rawHadithChapterId);
+                const mappedId = chapterIdMapping[hadithChapterId] ?? chapterIdMapping[normalizedHadithChapterId];
+                const fallbackChapterId = firstInternalChapterId ?? 1;
 
                 newBook.hadiths.push({
                     ...h,
-                    internal_chapter_id: mappedId !== undefined ? mappedId : (parseInt(hadithChapterId) || 1),
+                    internal_chapter_id: mappedId !== undefined ? mappedId : fallbackChapterId,
                     bookId: newBook.id
                 });
             });
@@ -1327,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="hadith-actions">
                         ${badge}
-                        <i class="fa-regular fa-copy" title="কপি করুন" data-content="${encodeURIComponent(copyStr)}"></i>
+                        <i class="fa-regular fa-copy" title="কপি করুন"></i>
                         <i class="fa-regular fa-bookmark" title="বুকমার্ক"></i>
                     </div>
                 </div>
@@ -1341,8 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const copyIcon = card.querySelector('.fa-copy');
             if (copyIcon) {
                 copyIcon.addEventListener('click', function () {
-                    const decoded = decodeURIComponent(this.getAttribute('data-content'));
-                    navigator.clipboard.writeText(decoded).then(() => {
+                    navigator.clipboard.writeText(copyStr).then(() => {
                         this.className = "fa-solid fa-check";
                         this.style.color = "var(--primary)";
                         setTimeout(() => {
