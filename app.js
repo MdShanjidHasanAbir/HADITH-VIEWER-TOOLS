@@ -1340,5 +1340,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize list empty state
     renderSidebarList();
+
+    // Footer Dropdown Toggle
+    const footerDropdownToggle = document.getElementById('footer-dropdown-toggle');
+    const footerDropdownContent = document.getElementById('footer-dropdown-content');
+
+    if (footerDropdownToggle && footerDropdownContent) {
+        // Check localStorage for saved state
+        const isCollapsed = localStorage.getItem('footerDropdownCollapsed') === 'true';
+        if (isCollapsed) {
+            footerDropdownToggle.classList.add('collapsed');
+            footerDropdownContent.classList.add('collapsed');
+        }
+
+        footerDropdownToggle.addEventListener('click', () => {
+            footerDropdownToggle.classList.toggle('collapsed');
+            footerDropdownContent.classList.toggle('collapsed');
+
+            // Save state to localStorage
+            const collapsed = footerDropdownToggle.classList.contains('collapsed');
+            localStorage.setItem('footerDropdownCollapsed', collapsed);
+        });
+    }
 });
 

@@ -33,19 +33,25 @@
             </div>
 
             <div class="sidebar-footer">
-                <label for="json-upload" class="upload-btn-small" style="margin-bottom:10px;">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> একটি বই যোগ করুন (JSON)
-                </label>
-                <input type="file" id="json-upload" accept=".json" multiple hidden>
+                <div class="footer-dropdown-header" id="footer-dropdown-toggle">
+                    <span><i class="fa-solid fa-plus-circle"></i> বই যোগ করুন</span>
+                    <i class="fa-solid fa-chevron-up dropdown-arrow"></i>
+                </div>
+                <div class="footer-dropdown-content" id="footer-dropdown-content">
+                    <label for="json-upload" class="upload-btn-small">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> একটি বই যোগ করুন (JSON)
+                    </label>
+                    <input type="file" id="json-upload" accept=".json" multiple hidden>
 
-                <label for="xlsx-upload" class="upload-btn-small" style="margin-bottom:10px;">
-                    <i class="fa-solid fa-file-excel"></i> একটি বই যোগ করুন (XLSX)
-                </label>
-                <input type="file" id="xlsx-upload" accept=".xlsx,.xls" multiple hidden>
+                    <label for="xlsx-upload" class="upload-btn-small">
+                        <i class="fa-solid fa-file-excel"></i> একটি বই যোগ করুন (XLSX)
+                    </label>
+                    <input type="file" id="xlsx-upload" accept=".xlsx,.xls" multiple hidden>
 
-                <button id="btn-open-merge" class="upload-btn-small outline" style="margin-bottom: 0;">
-                    <i class="fa-solid fa-object-group"></i> একাধিক ফাইল মার্জ করুন
-                </button>
+                    <button id="btn-open-merge" class="upload-btn-small outline">
+                        <i class="fa-solid fa-object-group"></i> একাধিক ফাইল মার্জ করুন
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -54,6 +60,10 @@
                 <button class="menu-btn" id="menu-btn" aria-label="Toggle menu">
                     <i class="fa-solid fa-bars"></i>
                 </button>
+                <div class="app-header-title">
+                    <i class="fa-solid fa-book-quran"></i>
+                    HADITH VIEWER TOOLS
+                </div>
                 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Dark Mode">
                     <i class="fa-solid fa-moon"></i>
                 </button>

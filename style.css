@@ -219,10 +219,55 @@ body {
 .sidebar-footer {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 1rem;
     border-top: 1px solid var(--border-color);
     background: var(--card-bg);
+}
+
+.footer-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--primary);
+    transition: all 0.2s;
+}
+
+.footer-dropdown-header:hover {
+    background: var(--hover-bg);
+}
+
+.footer-dropdown-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footer-dropdown-header .dropdown-arrow {
+    transition: transform 0.3s ease;
+}
+
+.footer-dropdown-header.collapsed .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.footer-dropdown-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 1rem 1rem;
+    max-height: 300px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+.footer-dropdown-content.collapsed {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
 }
 
 .upload-btn-small {
@@ -266,13 +311,32 @@ body {
 
 .top-nav {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     background: var(--bg-main);
-    padding: 1rem 2rem;
+    padding: 1.2rem 2rem;
     position: sticky;
     top: 0;
     z-index: 40;
+}
+
+.app-header-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--primary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.app-header-title i {
+    font-size: 1.6rem;
 }
 
 .menu-btn {
