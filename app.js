@@ -263,45 +263,47 @@ document.addEventListener('DOMContentLoaded', () => {
             let value = row[key];
 
             // Convert numeric strings to numbers for ID fields
-            if (lowerKey.includes('_id') || lowerKey === 'page') {
+            if (lowerKey.includes('id') || lowerKey === 'page') {
                 if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
                     value = parseInt(value.trim(), 10);
+                } else if (typeof value === 'number') {
+                    value = Math.floor(value);
                 }
             }
 
             // Map common field names
-            if (lowerKey === 'chapter_id' || lowerKey === 'chapterid') {
+            if (lowerKey === 'chapter_id' || lowerKey === 'chapterid' || lowerKey === 'chapter') {
                 normalized.chapter_id = value;
-            } else if (lowerKey === 'section_id' || lowerKey === 'sectionid') {
+            } else if (lowerKey === 'section_id' || lowerKey === 'sectionid' || lowerKey === 'section') {
                 normalized.section_id = value;
-            } else if (lowerKey === 'hadith_id' || lowerKey === 'hadithid') {
+            } else if (lowerKey === 'hadith_id' || lowerKey === 'hadithid' || lowerKey === 'hadith' || lowerKey === 'id') {
                 normalized.hadith_id = value;
-            } else if (lowerKey === 'display_number' || lowerKey === 'displaynumber') {
+            } else if (lowerKey === 'display_number' || lowerKey === 'displaynumber' || lowerKey === 'number') {
                 normalized.display_number = value;
-            } else if (lowerKey === 'title') {
+            } else if (lowerKey === 'title' || lowerKey === 'name') {
                 normalized.title = value;
-            } else if (lowerKey === 'ar_title' || lowerKey === 'artitle') {
+            } else if (lowerKey === 'ar_title' || lowerKey === 'artitle' || lowerKey === 'arabic_title') {
                 normalized.ar_title = value;
-            } else if (lowerKey === 'preface') {
+            } else if (lowerKey === 'preface' || lowerKey === 'introduction' || lowerKey === 'intro') {
                 normalized.preface = value;
             } else if (lowerKey === 'page') {
                 normalized.page = value;
-            } else if (lowerKey === 'narrator') {
+            } else if (lowerKey === 'narrator' || lowerKey === 'rawi' || lowerKey === 'narrated_by') {
                 normalized.narrator = value;
-            } else if (lowerKey === 'grade') {
+            } else if (lowerKey === 'grade' || lowerKey === 'status') {
                 normalized.grade = value;
             } else if (lowerKey === 'grade_id' || lowerKey === 'gradeid') {
                 // Convert grade_id to grade name
-                const gradeId = typeof value === 'string' ? parseInt(value.trim(), 10) : value;
+                const gradeId = typeof value === 'string' ? parseInt(value.trim(), 10) : (typeof value === 'number' ? Math.floor(value) : value);
                 normalized.grade_id = gradeId;
                 if (gradeIdToName[gradeId]) {
                     normalized.grade = gradeIdToName[gradeId];
                 }
-            } else if (lowerKey === 'ar') {
+            } else if (lowerKey === 'ar' || lowerKey === 'arabic' || lowerKey === 'ar_text') {
                 normalized.ar = value;
-            } else if (lowerKey === 'content') {
+            } else if (lowerKey === 'content' || lowerKey === 'text' || lowerKey === 'hadith_text' || lowerKey === 'body' || lowerKey === 'translation') {
                 normalized.content = value;
-            } else if (lowerKey === 'note') {
+            } else if (lowerKey === 'note' || lowerKey === 'notes' || lowerKey === 'footnote' || lowerKey === 'reference') {
                 normalized.note = value;
             } else if (lowerKey === 'label') {
                 normalized.label = value;
@@ -375,12 +377,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chapterList.forEach(c => {
                 globalChapterCounter++;
-                chapterIdMapping[c.chapter_id] = globalChapterCounter;
+                // Use string key for consistent mapping
+                const chapterId = String(c.chapter_id ?? c.id ?? globalChapterCounter);
+                chapterIdMapping[chapterId] = globalChapterCounter;
 
                 newBook.chapters.push({
                     ...c,
+                    chapter_id: c.chapter_id ?? c.id ?? globalChapterCounter,
                     internal_chapter_id: globalChapterCounter,
-                    original_chapter_id: c.chapter_id,
+                    original_chapter_id: c.chapter_id ?? c.id ?? globalChapterCounter,
                     bookId: newBook.id
                 });
             });
@@ -388,14 +393,20 @@ document.addEventListener('DOMContentLoaded', () => {
             sectionList.forEach(s => {
                 newBook.sections.push({
                     ...s,
+                    chapter_id: s.chapter_id ?? s.id,
+                    section_id: s.section_id ?? s.id,
                     bookId: newBook.id
                 });
             });
 
             hadithList.forEach(h => {
+                // Use string key for consistent lookup
+                const hadithChapterId = String(h.chapter_id ?? 1);
+                const mappedId = chapterIdMapping[hadithChapterId];
+
                 newBook.hadiths.push({
                     ...h,
-                    internal_chapter_id: chapterIdMapping[h.chapter_id] || h.chapter_id,
+                    internal_chapter_id: mappedId !== undefined ? mappedId : (parseInt(hadithChapterId) || 1),
                     bookId: newBook.id
                 });
             });
@@ -1207,7 +1218,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!book) return;
         const chapter = book.chapters.find(c => c.internal_chapter_id === currentChapterId);
         if (!chapter) return;
-        const hadiths = book.hadiths.filter(h => h.internal_chapter_id === currentChapterId);
+
+        // Try exact match first, then fallback to original chapter_id match
+        let hadiths = book.hadiths.filter(h => h.internal_chapter_id === currentChapterId);
+
+        // If no hadiths found, try matching by original chapter_id
+        if (hadiths.length === 0) {
+            const originalChapterId = chapter.original_chapter_id ?? chapter.chapter_id;
+            hadiths = book.hadiths.filter(h => {
+                const hChapterId = h.chapter_id;
+                return hChapterId == originalChapterId || String(hChapterId) === String(originalChapterId);
+            });
+        }
+
         const chapterSourceId = String(chapter.original_chapter_id ?? chapter.chapter_id ?? '');
 
         const sectionMap = new Map();
