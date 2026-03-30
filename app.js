@@ -1414,12 +1414,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'hadith-card';
 
-            const badge = h.grade ? `<div class="grade-badge">${h.grade} </div>` : '';
+            const badge = h.grade ? `<div class="grade-badge">${escapeHtml(h.grade)}</div>` : '<div class="grade-badge grade-empty">গ্রেড নেই</div>';
             const text = h.content ? String(h.content).replace(/\\n|\n/g, '<br>') : '';
             const note = h.note ? `<div class="hadith-note">${String(h.note).replace(/\\n|\n/g, '<br>')}</div>` : '';
 
             const arabicText = h.ar ? `<div class="hadith-arabic" dir="rtl">${String(h.ar).replace(/\\n|\n/g, '<br>')}</div>` : '';
-            const narratorText = h.narrator ? `<div class="hadith-narrator">${h.narrator} থেকে বর্ণিত :</div>` : '';
+            const narratorText = h.narrator ? `<div class="hadith-narrator">${escapeHtml(h.narrator)} থেকে বর্ণিত :</div>` : '';
 
             // Convert display_number to string before split, handle both "1/2" format and plain numbers
             let hadithNumDisplay;
@@ -1434,11 +1434,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 hadithNumDisplay = toBnNum(h.hadith_id);
             }
 
-            let fullTextToCopy = [];
-            if (h.ar) fullTextToCopy.push(h.ar);
-            if (h.narrator) fullTextToCopy.push(h.narrator);
-            if (h.content) fullTextToCopy.push(h.content);
-            const copyStr = fullTextToCopy.join('\n\n');
+            // Store hadith index for editing
+            const hadithIndex = book.hadiths.indexOf(h);
+            const exportHadithIndex = book.exportData.hadiths.findIndex(eh =>
+                eh.hadith_id === h.hadith_id && eh.chapter_id === h.chapter_id
+            );
 
             card.innerHTML = `
                 <div class="hadith-header">
@@ -1448,8 +1448,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="hadith-actions">
                         ${badge}
-                        <i class="fa-regular fa-copy" title="কপি করুন"></i>
-                        <i class="fa-regular fa-bookmark" title="বুকমার্ক"></i>
+                        <button class="edit-btn" title="সম্পাদনা করুন"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button class="save-btn" title="সংরক্ষণ করুন" style="display:none;"><i class="fa-solid fa-floppy-disk"></i></button>
                     </div>
                 </div>
                 ${arabicText}
@@ -1459,19 +1459,163 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             hadithsContainer.appendChild(card);
 
-            const copyIcon = card.querySelector('.fa-copy');
-            if (copyIcon) {
-                copyIcon.addEventListener('click', function () {
-                    navigator.clipboard.writeText(copyStr).then(() => {
-                        this.className = "fa-solid fa-check";
-                        this.style.color = "var(--primary)";
-                        setTimeout(() => {
-                            this.className = "fa-regular fa-copy";
-                            this.style.color = "";
-                        }, 2000);
-                    });
-                });
-            }
+            // Edit functionality
+            const editBtn = card.querySelector('.edit-btn');
+            const saveBtn = card.querySelector('.save-btn');
+            const gradeBadge = card.querySelector('.grade-badge');
+            const arabicDiv = card.querySelector('.hadith-arabic');
+            const narratorDiv = card.querySelector('.hadith-narrator');
+            const textDiv = card.querySelector('.hadith-text');
+            const noteDiv = card.querySelector('.hadith-note');
+
+            editBtn.addEventListener('click', function() {
+                card.classList.add('editing');
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'inline-flex';
+
+                // Make grade editable
+                if (gradeBadge) {
+                    const currentGrade = h.grade || '';
+                    gradeBadge.innerHTML = `<input type="text" class="edit-input edit-grade" value="${escapeHtml(currentGrade)}" placeholder="গ্রেড">`;
+                }
+
+                // Make Arabic text editable
+                if (arabicDiv) {
+                    const currentAr = h.ar || '';
+                    arabicDiv.innerHTML = `<textarea class="edit-textarea edit-ar" dir="rtl" placeholder="আরবি টেক্সট">${escapeHtml(currentAr)}</textarea>`;
+                } else {
+                    const newArDiv = document.createElement('div');
+                    newArDiv.className = 'hadith-arabic';
+                    newArDiv.dir = 'rtl';
+                    newArDiv.innerHTML = `<textarea class="edit-textarea edit-ar" dir="rtl" placeholder="আরবি টেক্সট"></textarea>`;
+                    card.querySelector('.hadith-header').after(newArDiv);
+                }
+
+                // Make narrator editable
+                if (narratorDiv) {
+                    const currentNarrator = h.narrator || '';
+                    narratorDiv.innerHTML = `<input type="text" class="edit-input edit-narrator" value="${escapeHtml(currentNarrator)}" placeholder="বর্ণনাকারী"> থেকে বর্ণিত :`;
+                } else {
+                    const arDiv = card.querySelector('.hadith-arabic');
+                    const newNarratorDiv = document.createElement('div');
+                    newNarratorDiv.className = 'hadith-narrator';
+                    newNarratorDiv.innerHTML = `<input type="text" class="edit-input edit-narrator" value="" placeholder="বর্ণনাকারী"> থেকে বর্ণিত :`;
+                    if (arDiv) {
+                        arDiv.after(newNarratorDiv);
+                    } else {
+                        card.querySelector('.hadith-header').after(newNarratorDiv);
+                    }
+                }
+
+                // Make content editable
+                if (textDiv) {
+                    const currentContent = h.content || '';
+                    textDiv.innerHTML = `<textarea class="edit-textarea edit-content" placeholder="হাদিসের বিষয়বস্তু">${escapeHtml(currentContent)}</textarea>`;
+                }
+
+                // Make note editable
+                if (noteDiv) {
+                    const currentNote = h.note || '';
+                    noteDiv.innerHTML = `<textarea class="edit-textarea edit-note" placeholder="টীকা">${escapeHtml(currentNote)}</textarea>`;
+                } else {
+                    const newNoteDiv = document.createElement('div');
+                    newNoteDiv.className = 'hadith-note';
+                    newNoteDiv.innerHTML = `<textarea class="edit-textarea edit-note" placeholder="টীকা"></textarea>`;
+                    textDiv.after(newNoteDiv);
+                }
+            });
+
+            saveBtn.addEventListener('click', function() {
+                // Get edited values
+                const newGrade = card.querySelector('.edit-grade')?.value || '';
+                const newAr = card.querySelector('.edit-ar')?.value || '';
+                const newNarrator = card.querySelector('.edit-narrator')?.value || '';
+                const newContent = card.querySelector('.edit-content')?.value || '';
+                const newNote = card.querySelector('.edit-note')?.value || '';
+
+                // Update hadith data in memory
+                if (hadithIndex !== -1) {
+                    book.hadiths[hadithIndex].grade = newGrade;
+                    book.hadiths[hadithIndex].ar = newAr;
+                    book.hadiths[hadithIndex].narrator = newNarrator;
+                    book.hadiths[hadithIndex].content = newContent;
+                    book.hadiths[hadithIndex].note = newNote;
+                }
+
+                // Update export data
+                if (exportHadithIndex !== -1) {
+                    book.exportData.hadiths[exportHadithIndex].grade = newGrade;
+                    book.exportData.hadiths[exportHadithIndex].ar = newAr;
+                    book.exportData.hadiths[exportHadithIndex].narrator = newNarrator;
+                    book.exportData.hadiths[exportHadithIndex].content = newContent;
+                    book.exportData.hadiths[exportHadithIndex].note = newNote;
+                }
+
+                // Update original hadith object
+                h.grade = newGrade;
+                h.ar = newAr;
+                h.narrator = newNarrator;
+                h.content = newContent;
+                h.note = newNote;
+
+                // Re-render card with updated data
+                card.classList.remove('editing');
+                editBtn.style.display = 'inline-flex';
+                saveBtn.style.display = 'none';
+
+                // Update grade badge
+                const gradeBadgeEl = card.querySelector('.grade-badge');
+                if (gradeBadgeEl) {
+                    gradeBadgeEl.innerHTML = newGrade || 'গ্রেড নেই';
+                    gradeBadgeEl.classList.toggle('grade-empty', !newGrade);
+                }
+
+                // Update Arabic text
+                const arDiv = card.querySelector('.hadith-arabic');
+                if (arDiv) {
+                    if (newAr) {
+                        arDiv.innerHTML = newAr.replace(/\\n|\n/g, '<br>');
+                    } else {
+                        arDiv.remove();
+                    }
+                }
+
+                // Update narrator
+                const narrDiv = card.querySelector('.hadith-narrator');
+                if (narrDiv) {
+                    if (newNarrator) {
+                        narrDiv.innerHTML = `${escapeHtml(newNarrator)} থেকে বর্ণিত :`;
+                    } else {
+                        narrDiv.remove();
+                    }
+                }
+
+                // Update content
+                const contentDiv = card.querySelector('.hadith-text');
+                if (contentDiv) {
+                    contentDiv.innerHTML = newContent.replace(/\\n|\n/g, '<br>');
+                }
+
+                // Update note
+                const noteElement = card.querySelector('.hadith-note');
+                if (noteElement) {
+                    if (newNote) {
+                        noteElement.innerHTML = newNote.replace(/\\n|\n/g, '<br>');
+                    } else {
+                        noteElement.remove();
+                    }
+                }
+
+                // Show success feedback
+                saveBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                saveBtn.style.display = 'inline-flex';
+                saveBtn.style.background = 'var(--primary)';
+                setTimeout(() => {
+                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i>';
+                    saveBtn.style.display = 'none';
+                    saveBtn.style.background = '';
+                }, 1500);
+            });
         });
 
         document.querySelector('.main-content').scrollTop = 0;
