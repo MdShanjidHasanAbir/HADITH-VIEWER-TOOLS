@@ -1268,15 +1268,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const sectionChapterId = section?.chapter_id ?? h.chapter_id ?? chapterSourceId;
             const sectionKey = `${String(sectionChapterId ?? '')}::${String(sectionId ?? '')}`;
             const sectionTitle = section?.title || section?.ar_title || `Section ${sectionId ?? ''}`;
-            const sectionDisplay = section?.display_number ? toBnNum(section.display_number) : (sectionId !== undefined && sectionId !== null ? toBnNum(sectionId) : '');
+            const sectionDisplay = section?.display_number != null ? toBnNum(String(section.display_number)) : (sectionId != null ? toBnNum(String(sectionId)) : '');
 
             if (sectionKey !== lastSectionKey) {
                 const sectionCard = document.createElement('div');
                 sectionCard.className = 'hadith-section-card';
 
-                const sectionPrefaceRaw = section?.preface || '';
+                const sectionPrefaceRaw = section?.preface ? String(section.preface) : '';
                 const sectionPreface = sectionPrefaceRaw ? sectionPrefaceRaw.replace(/\\n|\n/g, '<br>') : '';
-                const sectionLabel = section?.label || '';
+                const sectionLabel = section?.label ? String(section.label) : '';
 
                 sectionCard.innerHTML = `
                     ${sectionLabel ? `<div class="hadith-section-label">${sectionLabel}</div>` : ''}
@@ -1294,13 +1294,24 @@ document.addEventListener('DOMContentLoaded', () => {
             card.className = 'hadith-card';
 
             const badge = h.grade ? `<div class="grade-badge">${h.grade} </div>` : '';
-            const text = h.content ? h.content.replace(/\\n|\n/g, '<br>') : '';
-            const note = h.note ? `<div class="hadith-note">${h.note.replace(/\\n|\n/g, '<br>')}</div>` : '';
+            const text = h.content ? String(h.content).replace(/\\n|\n/g, '<br>') : '';
+            const note = h.note ? `<div class="hadith-note">${String(h.note).replace(/\\n|\n/g, '<br>')}</div>` : '';
 
-            const arabicText = h.ar ? `<div class="hadith-arabic" dir="rtl">${h.ar.replace(/\\n|\n/g, '<br>')}</div>` : '';
+            const arabicText = h.ar ? `<div class="hadith-arabic" dir="rtl">${String(h.ar).replace(/\\n|\n/g, '<br>')}</div>` : '';
             const narratorText = h.narrator ? `<div class="hadith-narrator">${h.narrator} থেকে বর্ণিত :</div>` : '';
 
-            let hadithNumDisplay = h.display_number ? toBnNum(h.display_number.split('/')[1] || h.hadith_id) : toBnNum(h.hadith_id);
+            // Convert display_number to string before split, handle both "1/2" format and plain numbers
+            let hadithNumDisplay;
+            if (h.display_number != null) {
+                const displayStr = String(h.display_number);
+                if (displayStr.includes('/')) {
+                    hadithNumDisplay = toBnNum(displayStr.split('/')[1] || h.hadith_id);
+                } else {
+                    hadithNumDisplay = toBnNum(displayStr);
+                }
+            } else {
+                hadithNumDisplay = toBnNum(h.hadith_id);
+            }
 
             let fullTextToCopy = [];
             if (h.ar) fullTextToCopy.push(h.ar);
