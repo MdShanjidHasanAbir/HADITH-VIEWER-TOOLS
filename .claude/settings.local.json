@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"d:\\\\ABIR WORKS\\\\DATABASE\\\\TOOLS & SCRIPTS\\\\HADITH JSON FILE VIEWER\\\\index.html\")",
+      "Bash(start index.html)"
+    ]
+  }
+}

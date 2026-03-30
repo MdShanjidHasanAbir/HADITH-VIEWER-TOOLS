@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>হাদিস সংকলন</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app-screen" class="screen active">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="tabs">
+                    <button class="tab active" data-tab="books" id="tab-books">বই</button>
+                    <button class="tab" data-tab="chapters" id="tab-chapters">অধ্যায়</button>
+                    <button class="tab" data-tab="xlsx" id="tab-xlsx">XLSX</button>
+                </div>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="sidebar-search" placeholder="বই সার্চ করুন">
+                </div>
+            </div>
+
+            <div class="list-container" id="list-container">
+                <!-- Books or Chapters will be rendered here -->
+            </div>
+
+            <div class="sidebar-footer">
+                <label for="json-upload" class="upload-btn-small" style="margin-bottom:10px;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> একটি বই যোগ করুন (JSON)
+                </label>
+                <input type="file" id="json-upload" accept=".json" multiple hidden>
+
+                <label for="xlsx-upload" class="upload-btn-small" style="margin-bottom:10px;">
+                    <i class="fa-solid fa-file-excel"></i> একটি বই যোগ করুন (XLSX)
+                </label>
+                <input type="file" id="xlsx-upload" accept=".xlsx,.xls" multiple hidden>
+
+                <button id="btn-open-merge" class="upload-btn-small outline" style="margin-bottom: 0;">
+                    <i class="fa-solid fa-object-group"></i> একাধিক ফাইল মার্জ করুন
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="top-nav">
+                <button class="menu-btn" id="menu-btn" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Dark Mode">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+            <div class="content-wrapper">
+
+                <!-- HOME VIEW -->
+                <div id="home-view" class="view active">
+                    <div class="home-center">
+                        <h1 class="home-title">আল হাদিস</h1>
+                        <div class="home-search">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="global-search" placeholder="হাদিস সার্চ করুন">
+                            <div class="shortcut-pill">Ctrl+K</div>
+                        </div>
+                        <div class="book-pills" id="book-pills">
+                            <!-- Pill buttons will be generated here -->
+                        </div>
+
+                        <div id="home-empty-state" class="empty-state">
+                            <i class="fa-solid fa-book-quran empty-icon"></i>
+                            <p>কোনো হাদিস গ্রন্থ আপলোড করা নেই।<br>বাম পাশের প্যানেল থেকে 'একটি বই যোগ করুন' অথবা
+                                'একাধিক ফাইল মার্জ করুন' বাটনে ক্লিক করে JSON ফাইল আপলোড করুন।</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHAPTER VIEW -->
+                <div id="chapter-view" class="view">
+                    <div class="breadcrumb">
+                        <div class="breadcrumb-item go-home-btn">
+                            <i class="fa-solid fa-house"></i> হোম
+                        </div>
+                        <i class="fa-solid fa-chevron-right separator"></i>
+                        <span id="bc-book" class="breadcrumb-item text-muted">বই</span>
+                        <i class="fa-solid fa-chevron-right separator"></i>
+                        <span id="bc-title" class="breadcrumb-item text-muted">অধ্যায়</span>
+                    </div>
+
+                    <div class="chapter-info-card" id="chapter-info">
+                        <!-- Chapter title and preface -->
+                    </div>
+
+                    <div class="hadiths-container" id="hadiths-container">
+                        <!-- Hadiths will go here -->
+                    </div>
+                </div>
+
+                <!-- MERGE VIEW -->
+                <div id="merge-view" class="view">
+                    <div class="breadcrumb">
+                        <div class="breadcrumb-item go-home-btn">
+                            <i class="fa-solid fa-house"></i> হোম
+                        </div>
+                        <i class="fa-solid fa-chevron-right separator"></i>
+                        <span class="text-muted">ফাইল মার্জ করুন</span>
+                    </div>
+
+                    <div class="merge-container">
+                        <h2>একাধিক JSON ফাইল একটি বইয়ে মার্জ করুন</h2>
+                        <p class="text-muted" style="margin-bottom: 2rem; font-size: 0.95rem;">আপনার বইয়ের বিভিন্ন খণ্ড
+                            বা অংশের ফাইলগুলো একসাথে নির্বাচন করে একটি পূর্ণাঙ্গ বই তৈরি করুন।</p>
+
+                        <div class="form-group">
+                            <label>বইয়ের নাম লিখুন:</label>
+                            <input type="text" id="merge-book-name" placeholder="যেমন: সহিহ বুখারী"
+                                class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label>JSON ফাইলগুলো নির্বাচন করুন:</label>
+                            <label class="merge-upload-box" for="merge-file-input">
+                                <i class="fa-solid fa-file-circle-plus"></i>
+                                <span>ফাইলগুলো বেছে নিতে এখানে ক্লিক করুন</span>
+                            </label>
+                            <input type="file" id="merge-file-input" accept=".json" multiple hidden>
+                        </div>
+
+                        <div id="merge-file-list" class="merge-file-list">
+                            <!-- Selected files will appear here -->
+                        </div>
+
+                        <div class="btn-group-inline">
+                            <button id="btn-do-merge" class="btn-primary" disabled>মার্জ করুন এবং সেভ করুন</button>
+                            <button id="btn-do-merge-xlsx" class="btn-secondary" disabled>
+                                <i class="fa-solid fa-file-excel"></i> Merge + Download XLSX
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <!-- XLSX VIEW -->
+                <div id="xlsx-view" class="view">
+                    <div class="breadcrumb">
+                        <div class="breadcrumb-item go-home-btn">
+                            <i class="fa-solid fa-house"></i> হোম
+                        </div>
+                        <i class="fa-solid fa-chevron-right separator"></i>
+                        <span class="text-muted">XLSX Export</span>
+                    </div>
+
+                    <div class="merge-container">
+                        <h2>JSON ডাটা XLSX হিসাবে ডাউনলোড</h2>
+                        <p class="text-muted" style="margin-bottom: 1.5rem; font-size: 0.95rem;">
+                            প্রতিটি বই 3 টি sheet-এ এক্সপোর্ট হবে: <strong>chapter</strong>, <strong>section</strong>, <strong>hadith</strong>।
+                        </p>
+
+                        <div id="xlsx-book-summary" class="xlsx-summary text-muted">
+                            এখনও কোনো বই লোড করা হয়নি।
+                        </div>
+
+                        <div class="xlsx-preview-panel">
+                            <div class="xlsx-preview-header">
+                                <h3>Sheet Preview</h3>
+                                <span id="xlsx-preview-meta" class="text-muted"></span>
+                            </div>
+                            <div id="xlsx-sheet-tabs" class="xlsx-sheet-tabs">
+                                <button class="xlsx-sheet-tab active" data-sheet="chapter">chapter</button>
+                                <button class="xlsx-sheet-tab" data-sheet="section">section</button>
+                                <button class="xlsx-sheet-tab" data-sheet="hadith">hadith</button>
+                            </div>
+                            <div id="xlsx-sheet-table-wrap" class="xlsx-sheet-table-wrap">
+                                <div id="xlsx-sheet-empty" class="list-empty-msg">কোনও ডাটা নেই।</div>
+                                <table id="xlsx-sheet-table" class="xlsx-sheet-table"></table>
+                            </div>
+                        </div>
+
+                        <button id="btn-export-selected-xlsx" class="btn-primary" style="margin-top: 1rem;" disabled>
+                            <i class="fa-solid fa-file-excel"></i> Selected Book Export to XLSX
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
