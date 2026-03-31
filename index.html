@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="bn" id="html-root">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>হাদিস সংকলন</title>
+    <title id="page-title">হাদিস সংকলন</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;500;600;700&display=swap"
@@ -64,6 +64,9 @@
                     <i class="fa-solid fa-book-quran"></i>
                     HADITH VIEWER TOOLS
                 </div>
+                <button class="lang-toggle" id="lang-toggle" aria-label="Toggle Language">
+                    <span class="lang-text">EN</span>
+                </button>
                 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle Dark Mode">
                     <i class="fa-solid fa-moon"></i>
                 </button>
@@ -81,6 +84,19 @@
                         </div>
                         <div class="book-pills" id="book-pills">
                             <!-- Pill buttons will be generated here -->
+                        </div>
+
+                        <!-- Search Results Container -->
+                        <div id="search-results" class="search-results" style="display: none;">
+                            <div class="search-results-header">
+                                <span id="search-results-count"></span>
+                                <button id="clear-search" class="clear-search-btn">
+                                    <i class="fa-solid fa-xmark"></i> Clear
+                                </button>
+                            </div>
+                            <div id="search-results-list" class="search-results-list">
+                                <!-- Search results will be rendered here -->
+                            </div>
                         </div>
 
                         <div id="home-empty-state" class="empty-state">
