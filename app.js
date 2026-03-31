@@ -878,6 +878,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#39;');
     }
 
+    function sameId(a, b) {
+        return String(a ?? '') === String(b ?? '');
+    }
+
     function getXlsxPreviewData(book) {
         if (!book) return null;
 
@@ -1280,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .forEach(chapter => {
                     const item = document.createElement('div');
                     item.className = 'chapter-item';
-                    if (chapter.internal_chapter_id === currentChapterId) item.classList.add('active');
+                    if (sameId(chapter.internal_chapter_id, currentChapterId)) item.classList.add('active');
 
                     item.innerHTML = `
                         <div class="hex">${chapter.displayBn}</div>
@@ -1332,11 +1336,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderChapterContent() {
         const book = dbBooks.find(b => b.id === currentBookId);
         if (!book) return;
-        const chapter = book.chapters.find(c => c.internal_chapter_id === currentChapterId);
+        const chapter = book.chapters.find(c => sameId(c.internal_chapter_id, currentChapterId));
         if (!chapter) return;
 
         // Try exact match first, then fallback to original chapter_id match
-        let hadiths = book.hadiths.filter(h => h.internal_chapter_id === currentChapterId);
+        let hadiths = book.hadiths.filter(h => sameId(h.internal_chapter_id, currentChapterId));
 
         // If no hadiths found, try matching by original chapter_id
         if (hadiths.length === 0) {
