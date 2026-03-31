@@ -52,6 +52,14 @@ body.dark-mode .hadith-actions .edit-btn:hover {
     border-color: var(--primary);
 }
 
+body.dark-mode .chapter-item.active {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+body.dark-mode .chapter-item.active .hex {
+    background: var(--primary) !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -184,15 +192,21 @@ body {
 }
 
 .chapter-item.active {
-    background: var(--hover-bg);
+    background: rgba(16, 185, 129, 0.15);
     border-left: 4px solid var(--primary);
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    border-color: var(--primary);
 }
 
 .chapter-item.active .hex {
     background: var(--primary);
     color: white;
+}
+
+.chapter-item.active .chapter-info h3 {
+    font-weight: 700;
+    color: var(--primary);
 }
 
 .hex {
