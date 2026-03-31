@@ -80,7 +80,9 @@
                         <div class="home-search">
                             <i class="fa-solid fa-magnifying-glass search-icon"></i>
                             <input type="text" id="global-search" placeholder="হাদিস সার্চ করুন">
-                            <div class="shortcut-pill">Ctrl+K</div>
+                            <button id="clear-search" class="clear-search-btn" style="display: none;">
+                                <i class="fa-solid fa-xmark"></i> Clear
+                            </button>
                         </div>
                         <div class="book-pills" id="book-pills">
                             <!-- Pill buttons will be generated here -->
@@ -90,9 +92,6 @@
                         <div id="search-results" class="search-results" style="display: none;">
                             <div class="search-results-header">
                                 <span id="search-results-count"></span>
-                                <button id="clear-search" class="clear-search-btn">
-                                    <i class="fa-solid fa-xmark"></i> Clear
-                                </button>
                             </div>
                             <div id="search-results-list" class="search-results-list">
                                 <!-- Search results will be rendered here -->

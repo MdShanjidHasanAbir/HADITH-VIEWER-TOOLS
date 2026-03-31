@@ -215,6 +215,12 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerHTML = `<i class="fa-solid fa-house"></i> ${t('home')}`;
         });
 
+        // Clear search button
+        const clearBtn = document.getElementById('clear-search');
+        if (clearBtn) {
+            clearBtn.innerHTML = `<i class="fa-solid fa-xmark"></i> ${t('clear')}`;
+        }
+
         // Merge view
         const mergeContainer = document.querySelector('#merge-view .merge-container');
         if (mergeContainer) {
@@ -2063,8 +2069,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Global Search Functionality
     let searchTimeout = null;
 
+    // Helper function for multi-language text search
+    function textContains(text, query) {
+        if (!text || !query) return false;
+        const textStr = String(text);
+        const queryStr = String(query);
+
+        // Try case-insensitive search for Latin characters
+        if (textStr.toLowerCase().includes(queryStr.toLowerCase())) {
+            return true;
+        }
+
+        // Direct match for non-Latin scripts (Bangla, Arabic, etc.)
+        if (textStr.includes(queryStr)) {
+            return true;
+        }
+
+        return false;
+    }
+
     function performGlobalSearch(query) {
-        const q = query.trim().toLowerCase();
+        const q = query.trim();
 
         if (!q) {
             hideSearchResults();
@@ -2078,41 +2103,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 let matched = false;
                 let matchedField = '';
 
-                // Search by hadith_id
+                // Search by hadith_id (exact or partial match)
                 const hadithIdStr = String(hadith.hadith_id || '');
                 if (hadithIdStr === q || hadithIdStr.includes(q)) {
                     matched = true;
                     matchedField = 'id';
                 }
 
-                // Search in content
-                if (!matched && hadith.content && String(hadith.content).toLowerCase().includes(q)) {
-                    matched = true;
-                    matchedField = 'content';
-                }
+                // Search through ALL fields in the hadith object
+                if (!matched) {
+                    for (const [key, value] of Object.entries(hadith)) {
+                        if (value === null || value === undefined) continue;
+                        if (typeof value === 'object') continue; // Skip objects
 
-                // Search in Arabic
-                if (!matched && hadith.ar && String(hadith.ar).toLowerCase().includes(q)) {
-                    matched = true;
-                    matchedField = 'ar';
-                }
-
-                // Search in narrator
-                if (!matched && hadith.narrator && String(hadith.narrator).toLowerCase().includes(q)) {
-                    matched = true;
-                    matchedField = 'narrator';
-                }
-
-                // Search in grade
-                if (!matched && hadith.grade && String(hadith.grade).toLowerCase().includes(q)) {
-                    matched = true;
-                    matchedField = 'grade';
-                }
-
-                // Search in note
-                if (!matched && hadith.note && String(hadith.note).toLowerCase().includes(q)) {
-                    matched = true;
-                    matchedField = 'note';
+                        const valueStr = String(value);
+                        if (textContains(valueStr, q)) {
+                            matched = true;
+                            matchedField = key;
+                            break;
+                        }
+                    }
                 }
 
                 if (matched) {
@@ -2141,9 +2151,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const q = query.trim();
         if (!q) return escaped;
 
-        // Create a regex for case-insensitive matching
-        const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        return escaped.replace(regex, '<mark>$1</mark>');
+        // Escape special regex characters in query
+        const escapedQuery = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        // Create regex for case-insensitive matching (works for Latin and non-Latin)
+        try {
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            return escaped.replace(regex, '<mark>$1</mark>');
+        } catch (e) {
+            // Fallback: simple string replacement if regex fails
+            const lowerEscaped = escaped.toLowerCase();
+            const lowerQuery = q.toLowerCase();
+            const index = lowerEscaped.indexOf(lowerQuery);
+
+            if (index !== -1) {
+                const before = escaped.substring(0, index);
+                const match = escaped.substring(index, index + q.length);
+                const after = escaped.substring(index + q.length);
+                return before + '<mark>' + match + '</mark>' + after;
+            }
+
+            return escaped;
+        }
     }
 
     function displaySearchResults(results, query) {
@@ -2272,6 +2301,9 @@ document.addEventListener('DOMContentLoaded', () => {
     homeSearch.addEventListener('input', (e) => {
         const query = e.target.value;
 
+        // Show/hide clear button based on input
+        clearSearchBtn.style.display = query.trim() ? 'flex' : 'none';
+
         // Debounce search
         if (searchTimeout) {
             clearTimeout(searchTimeout);
@@ -2285,6 +2317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Clear search button
     clearSearchBtn.addEventListener('click', () => {
         homeSearch.value = '';
+        clearSearchBtn.style.display = 'none';
         hideSearchResults();
         homeSearch.focus();
     });
@@ -2293,6 +2326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     homeSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             homeSearch.value = '';
+            clearSearchBtn.style.display = 'none';
             hideSearchResults();
         }
     });
