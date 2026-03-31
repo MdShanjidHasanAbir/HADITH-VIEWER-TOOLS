@@ -1292,9 +1292,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     item.addEventListener('click', () => {
                         showChapterView(activeBook.id, chapter.internal_chapter_id);
-
-                        Array.from(listContainer.children).forEach(child => child.classList.remove('active'));
-                        item.classList.add('active');
                     });
                     listContainer.appendChild(item);
                 });
@@ -1325,8 +1322,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     item.addEventListener('click', () => {
                         showXlsxView(book.id);
-                        Array.from(listContainer.children).forEach(child => child.classList.remove('active'));
-                        item.classList.add('active');
                     });
 
                     listContainer.appendChild(item);
