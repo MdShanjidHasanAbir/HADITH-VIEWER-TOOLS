@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(start \"\" \"d:\\\\ABIR WORKS\\\\DATABASE\\\\TOOLS & SCRIPTS\\\\HADITH JSON FILE VIEWER\\\\index.html\")",
-      "Bash(start index.html)"
+      "Bash(start index.html)",
+      "Bash(powershell -Command \"node -c app.js 2>&1 || echo ''Syntax check via node''\")",
+      "Bash(node -c:*)",
+      "Bash(git checkout:*)",
+      "Bash(dir:*)"
     ]
   }
 }
