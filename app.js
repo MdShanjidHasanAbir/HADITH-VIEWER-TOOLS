@@ -734,6 +734,48 @@ document.addEventListener('DOMContentLoaded', () => {
         return raw.toLowerCase();
     }
 
+    function hasNonEmptyText(value) {
+        return value !== null && value !== undefined && String(value).trim() !== '';
+    }
+
+    function toAsciiDigits(value) {
+        const bnToEn = {
+            '\u09E6': '0', '\u09E7': '1', '\u09E8': '2', '\u09E9': '3', '\u09EA': '4',
+            '\u09EB': '5', '\u09EC': '6', '\u09ED': '7', '\u09EE': '8', '\u09EF': '9'
+        };
+        return String(value ?? '').replace(/[\u09E6-\u09EF]/g, d => bnToEn[d] || d);
+    }
+
+    function getDeclaredHadithRange(chapterRow) {
+        if (!chapterRow || typeof chapterRow !== 'object') return '';
+
+        const directCandidates = [
+            chapterRow.hadis_range,
+            chapterRow.hadith_range,
+            chapterRow.hadisrange,
+            chapterRow.hadithrange
+        ];
+        const directValue = directCandidates.find(hasNonEmptyText);
+        if (directValue !== undefined) {
+            return String(directValue).trim();
+        }
+
+        for (const key in chapterRow) {
+            const normalizedKey = normalizeXlsxKey(key);
+            const compactKey = normalizedKey.replace(/_/g, '');
+            const isRangeKey = normalizedKey === 'hadis_range'
+                || normalizedKey === 'hadith_range'
+                || compactKey === 'hadisrange'
+                || compactKey === 'hadithrange';
+
+            if (isRangeKey && hasNonEmptyText(chapterRow[key])) {
+                return String(chapterRow[key]).trim();
+            }
+        }
+
+        return '';
+    }
+
     function normalizeXlsxRow(row, type) {
         const normalized = {};
 
@@ -766,6 +808,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 normalized.ar_title = value;
             } else if (lowerKey === 'preface' || lowerKey === 'introduction' || lowerKey === 'intro') {
                 normalized.preface = value;
+            } else if (lowerKey === 'hadis_range' || lowerKey === 'hadith_range' || compactKey === 'hadisrange' || compactKey === 'hadithrange') {
+                normalized.hadis_range = value;
             } else if (lowerKey === 'page') {
                 normalized.page = value;
             } else if (lowerKey === 'narrator' || lowerKey === 'rawi' || lowerKey === 'narrated_by') {
@@ -908,18 +952,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let ranges = {};
         newBook.hadiths.forEach(h => {
             const cid = h.internal_chapter_id;
+            const hadithId = parseSortableNumber(h.hadith_id);
+            if (!Number.isFinite(hadithId)) return;
             if (!ranges[cid]) {
-                ranges[cid] = { min: h.hadith_id, max: h.hadith_id };
+                ranges[cid] = { min: hadithId, max: hadithId };
             } else {
-                if (h.hadith_id < ranges[cid].min) ranges[cid].min = h.hadith_id;
-                if (h.hadith_id > ranges[cid].max) ranges[cid].max = h.hadith_id;
+                if (hadithId < ranges[cid].min) ranges[cid].min = hadithId;
+                if (hadithId > ranges[cid].max) ranges[cid].max = hadithId;
             }
         });
 
         newBook.chapters = newBook.chapters.map(c => {
+            const declaredRange = getDeclaredHadithRange(c);
             const r = ranges[c.internal_chapter_id];
-            const rangeText = r ? `হাদিস রেঞ্জ: ${toBnNum(r.min)} - ${toBnNum(r.max)}` : 'হাদিস নেই';
-            const rangeTextEn = r ? `Hadith Range: ${r.min} - ${r.max}` : 'No Hadith';
+            let rangeText = translations.bn.noHadith;
+            let rangeTextEn = translations.en.noHadith;
+
+            if (declaredRange) {
+                const asciiRange = toAsciiDigits(declaredRange);
+                rangeText = `${translations.bn.hadithRange} ${toBnNum(asciiRange)}`;
+                rangeTextEn = `${translations.en.hadithRange} ${asciiRange}`;
+            } else if (r) {
+                rangeText = `${translations.bn.hadithRange} ${toBnNum(r.min)} - ${toBnNum(r.max)}`;
+                rangeTextEn = `${translations.en.hadithRange} ${r.min} - ${r.max}`;
+            }
+
             return {
                 ...c,
                 rangeText,
@@ -1880,6 +1937,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${badge}
                         <button class="edit-btn" title="${t('edit')}"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button class="save-btn" title="${t('save')}" style="display:none;"><i class="fa-solid fa-floppy-disk"></i></button>
+                        <span class="hadith-id-num">${h.hadith_id}</span>
                     </div>
                 </div>
                 ${arabicText}

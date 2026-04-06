@@ -891,6 +891,17 @@ body.dark-mode .search-result-content mark {
     border-color: #059669;
 }
 
+.hadith-actions .hadith-id-num {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    min-width: 40px;
+    text-align: center;
+}
+
 /* Grade badge empty state */
 .grade-badge.grade-empty {
     background: #9ca3af;

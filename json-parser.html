@@ -454,7 +454,7 @@
         }
 
         .sheet-tabs {
-            display: flex;
+            display: none;
             gap: 5px;
             margin-bottom: 0;
             background:
@@ -465,6 +465,10 @@
             overflow-x: auto;
             border: 1px solid var(--border-color);
             border-bottom: none;
+        }
+
+        .sheet-tabs.show {
+            display: flex;
         }
 
         [data-theme="light"] .sheet-tabs {
@@ -484,6 +488,11 @@
             cursor: pointer;
             transition: all 0.3s ease;
             white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: fit-content;
         }
 
         .sheet-tab:hover {
@@ -494,6 +503,43 @@
         .sheet-tab.active {
             background: linear-gradient(180deg, rgba(63, 227, 194, .2), rgba(247, 231, 160, .1));
             color: var(--teal);
+        }
+
+        .sheet-tab-name {
+            font-weight: 600;
+        }
+
+        .sheet-tab-count {
+            opacity: 0.7;
+            font-size: 0.85em;
+            margin-left: 4px;
+        }
+
+        .sheet-tab-range {
+            display: block;
+            font-size: 0.75em;
+            color: var(--gold1);
+            margin-top: 4px;
+            padding: 3px 8px;
+            background: rgba(247, 231, 160, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(247, 231, 160, 0.2);
+        }
+
+        .sheet-tab.active .sheet-tab-range {
+            background: rgba(247, 231, 160, 0.15);
+            border-color: rgba(247, 231, 160, 0.3);
+        }
+
+        [data-theme="light"] .sheet-tab-range {
+            color: var(--gold2);
+            background: rgba(201, 162, 39, 0.08);
+            border-color: rgba(201, 162, 39, 0.2);
+        }
+
+        [data-theme="light"] .sheet-tab.active .sheet-tab-range {
+            background: rgba(201, 162, 39, 0.12);
+            border-color: rgba(201, 162, 39, 0.3);
         }
 
         [data-theme="light"] .sheet-tab {

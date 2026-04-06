@@ -371,19 +371,42 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#39;');
     }
 
+    // Get hadis_range for a sheet if it exists
+    function getSheetHadisRange(sheetData) {
+        if (!sheetData || sheetData.length === 0) return null;
+
+        // Check if any row has hadis_range property
+        const firstRowWithRange = sheetData.find(row => row && row.hadis_range);
+        if (firstRowWithRange) {
+            return firstRowWithRange.hadis_range;
+        }
+        return null;
+    }
+
     // Render sheet tabs
     function renderSheetTabs() {
         const sheetNames = Object.keys(sheetStructure);
 
         if (sheetNames.length === 0) {
+            sheetTabs.classList.remove('show');
             sheetTabs.innerHTML = '';
             return;
         }
 
+        sheetTabs.classList.add('show');
         sheetTabs.innerHTML = sheetNames.map(name => {
             const isActive = name === activeSheet ? 'active' : '';
             const rowCount = sheetStructure[name].length;
-            return `<button class="sheet-tab ${isActive}" data-sheet="${name}">${name} (${rowCount})</button>`;
+            const hadisRange = getSheetHadisRange(sheetStructure[name]);
+
+            let tabContent = `<span class="sheet-tab-name">${escapeHtml(name)}</span>`;
+            tabContent += `<span class="sheet-tab-count">(${rowCount})</span>`;
+
+            if (hadisRange) {
+                tabContent += `<span class="sheet-tab-range">হাদিস রেঞ্জ: ${escapeHtml(hadisRange)}</span>`;
+            }
+
+            return `<button class="sheet-tab ${isActive}" data-sheet="${name}">${tabContent}</button>`;
         }).join('');
     }
 
@@ -531,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fileInfo.classList.remove('show');
         tableContainer.classList.remove('show');
+        sheetTabs.classList.remove('show');
         sheetTabs.innerHTML = '';
         tableHead.innerHTML = '';
         tableBody.innerHTML = '';
