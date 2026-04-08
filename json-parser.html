@@ -336,6 +336,31 @@
             box-shadow: 0 15px 40px rgba(13, 155, 122, 0.4);
         }
 
+        .upload-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .upload-btn-tagged {
+            background: linear-gradient(135deg, var(--gold1), var(--gold2));
+            box-shadow: 0 10px 30px rgba(247, 231, 160, 0.25);
+        }
+
+        .upload-btn-tagged:hover {
+            box-shadow: 0 15px 40px rgba(247, 231, 160, 0.35);
+        }
+
+        [data-theme="light"] .upload-btn-tagged {
+            box-shadow: 0 10px 30px rgba(201, 162, 39, 0.3);
+        }
+
+        [data-theme="light"] .upload-btn-tagged:hover {
+            box-shadow: 0 15px 40px rgba(201, 162, 39, 0.4);
+        }
+
         input[type="file"] {
             display: none;
         }
@@ -1001,10 +1026,16 @@
             <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
             <h2>Drop your JSON files here</h2>
             <p>or click to browse (select multiple files to merge)</p>
-            <label for="json-file" class="upload-btn">
-                <i class="fa-solid fa-folder-open"></i> Select JSON Files
-            </label>
+            <div class="upload-buttons">
+                <label for="json-file" class="upload-btn">
+                    <i class="fa-solid fa-folder-open"></i> Select JSON Files
+                </label>
+                <label for="tagged-json-file" class="upload-btn upload-btn-tagged">
+                    <i class="fa-solid fa-tags"></i> Tagged JSON
+                </label>
+            </div>
             <input type="file" id="json-file" accept=".json" multiple>
+            <input type="file" id="tagged-json-file" accept=".json" multiple>
         </div>
 
         <!-- Multiple Files List -->

@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDark = document.getElementById('btn-dark');
     const uploadSection = document.getElementById('upload-section');
     const fileInput = document.getElementById('json-file');
+    const taggedFileInput = document.getElementById('tagged-json-file');
     const fileInfo = document.getElementById('file-info');
     const fileName = document.getElementById('file-name');
     const fileMeta = document.getElementById('file-meta');
@@ -260,6 +261,216 @@ document.addEventListener('DOMContentLoaded', () => {
         return sheets;
     }
 
+    function cleanTaggedContent(content) {
+        return String(content || '')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    function normalizePageLabel(pageNumber) {
+        return String(pageNumber || '')
+            .replace(/\r?\n+/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+    }
+
+    function toAsciiDigits(value) {
+        const banglaDigits = '\u09E6\u09E7\u09E8\u09E9\u09EA\u09EB\u09EC\u09ED\u09EE\u09EF';
+        const arabicIndicDigits = '\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669';
+        return String(value || '').replace(/[\u09E6-\u09EF\u0660-\u0669]/g, char => {
+            const banglaIndex = banglaDigits.indexOf(char);
+            if (banglaIndex !== -1) return String(banglaIndex);
+
+            const arabicIndicIndex = arabicIndicDigits.indexOf(char);
+            if (arabicIndicIndex !== -1) return String(arabicIndicIndex);
+
+            return char;
+        });
+    }
+
+    function extractNumericPageNumber(pageNumber) {
+        const normalized = toAsciiDigits(pageNumber);
+        const match = normalized.match(/\d+/);
+        return match ? match[0] : '';
+    }
+
+    function extractPageTitleFromPageNumber(pageNumber) {
+        const label = normalizePageLabel(pageNumber);
+        if (!label) return '';
+
+        // Common format: "107 • Title"
+        const bulletSeparated = label.split(/\s*[\u2022\u25CF\u25E6]\s*/);
+        if (bulletSeparated.length > 1) {
+            return bulletSeparated.slice(1).join(' ').trim();
+        }
+
+        // Fallback: "107 Title"
+        const withoutLeadingNumber = label.replace(/^[0-9\u09E6-\u09EF\u0660-\u0669]+\s*/, '').trim();
+        return withoutLeadingNumber !== label ? withoutLeadingNumber : '';
+    }
+
+    function buildTaggedRow({
+        heading = '',
+        subheading = '',
+        text = '',
+        pageNumber = '',
+        sourcePdf = '',
+        sourceFile = '',
+        blockIndex = 1
+    }) {
+        const pageLabel = normalizePageLabel(pageNumber);
+        const headingFromPage = extractPageTitleFromPageNumber(pageLabel);
+        const normalizedHeading = heading || headingFromPage;
+
+        return {
+            heading: normalizedHeading || '',
+            subheading: subheading || '',
+            text: text || '',
+            page_number: pageLabel || '',
+            page_number_numeric: extractNumericPageNumber(pageLabel),
+            source_pdf: sourcePdf || '',
+            source_file: sourceFile || '',
+            block_index: blockIndex
+        };
+    }
+
+    function collectTaggedDocuments(data, options = {}) {
+        const documents = [];
+
+        function walk(node, inheritedPdf = '') {
+            if (node === null || node === undefined) {
+                return;
+            }
+
+            if (typeof node === 'string') {
+                if (/<(page_number|heading|sub[-_]?heading|text)>/i.test(node)) {
+                    documents.push({
+                        rawText: node,
+                        sourcePdf: inheritedPdf || '',
+                        sourceFile: options.sourceFileName || ''
+                    });
+                }
+                return;
+            }
+
+            if (Array.isArray(node)) {
+                for (const item of node) {
+                    walk(item, inheritedPdf);
+                }
+                return;
+            }
+
+            if (typeof node === 'object') {
+                const sourcePdf = node.pdfName || node.pdf_name || inheritedPdf || '';
+                const rawText = node.rawText || node.raw_text || node.content || node.text || '';
+
+                if (typeof rawText === 'string' && rawText.trim()) {
+                    documents.push({
+                        rawText,
+                        sourcePdf,
+                        sourceFile: options.sourceFileName || ''
+                    });
+                    return;
+                }
+
+                for (const key of Object.keys(node)) {
+                    walk(node[key], sourcePdf);
+                }
+            }
+        }
+
+        walk(data, '');
+        return documents;
+    }
+
+    // Parse tagged JSON (with HTML-like tags) to structured sheet
+    function parseTaggedJsonToSheets(data, options = {}) {
+        const sheets = {};
+        const taggedDocs = collectTaggedDocuments(data, options);
+        let textBlocks = [];
+        let blockIndex = 1;
+
+        for (const doc of taggedDocs) {
+            const rawText = doc.rawText || '';
+            if (!rawText) {
+                continue;
+            }
+
+            let currentPageNumber = '';
+            let currentHeading = '';
+            let currentSubheading = '';
+
+            // Parse tags while preserving sequence
+            const tagPattern = /<(page_number|heading|sub[-_]?heading|text)>([\s\S]*?)<\/\1>/gi;
+            let match;
+            let beforeDocCount = textBlocks.length;
+
+            while ((match = tagPattern.exec(rawText)) !== null) {
+                const tagName = match[1].toLowerCase();
+                const content = cleanTaggedContent(match[2]);
+
+                if (tagName === 'page_number') {
+                    currentPageNumber = content;
+                } else if (tagName === 'heading') {
+                    currentHeading = content;
+                    currentSubheading = '';
+                } else if (tagName.includes('sub') && tagName.includes('heading')) {
+                    currentSubheading = content;
+                } else if (tagName === 'text') {
+                    textBlocks.push(buildTaggedRow({
+                        heading: currentHeading,
+                        subheading: currentSubheading,
+                        text: content,
+                        pageNumber: currentPageNumber,
+                        sourcePdf: doc.sourcePdf,
+                        sourceFile: doc.sourceFile,
+                        blockIndex
+                    }));
+                    blockIndex++;
+                }
+            }
+
+            // Fallback if strict ordered parsing didn't find rows
+            if (textBlocks.length === beforeDocCount) {
+                const pageMatches = [...rawText.matchAll(/<page_number>([\s\S]*?)<\/page_number>/gi)];
+                const textMatches = [...rawText.matchAll(/<text>([\s\S]*?)<\/text>/gi)];
+
+                for (let i = 0; i < Math.max(pageMatches.length, textMatches.length); i++) {
+                    const pageNum = pageMatches[i] ? cleanTaggedContent(pageMatches[i][1]) : '';
+                    const text = textMatches[i] ? cleanTaggedContent(textMatches[i][1]) : '';
+
+                    if (pageNum || text) {
+                        textBlocks.push(buildTaggedRow({
+                            text,
+                            pageNumber: pageNum,
+                            sourcePdf: doc.sourcePdf,
+                            sourceFile: doc.sourceFile,
+                            blockIndex
+                        }));
+                        blockIndex++;
+                    }
+                }
+            }
+        }
+
+        // Last fallback: no valid tag blocks found
+        if (textBlocks.length === 0) {
+            const fallbackText = typeof data === 'string'
+                ? cleanTaggedContent(data.replace(/<[^>]+>/g, ' '))
+                : '';
+
+            textBlocks.push(buildTaggedRow({
+                text: fallbackText,
+                blockIndex: 1
+            }));
+        }
+
+        sheets['data'] = textBlocks;
+        return sheets;
+    }
+
     function getDocumentSheetGroups(documents) {
         return documents.map(doc => parseJsonToSheets(doc));
     }
@@ -504,6 +715,80 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file);
     }
 
+    // Process multiple tagged JSON files
+    function processMultipleTaggedFiles(files) {
+        const jsonFiles = Array.from(files).filter(f => f.name.endsWith('.json'));
+
+        if (jsonFiles.length === 0) {
+            alert('Please select JSON files');
+            return;
+        }
+
+        // For tagged files, merge all into single sheet
+        const allBlocks = [];
+        let processedCount = 0;
+        const fileNames = [];
+
+        for (const file of jsonFiles) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    let text = e.target.result;
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.slice(1);
+                    }
+                    text = text.trim();
+
+                    const parsedData = JSON.parse(text);
+                    const sheets = parseTaggedJsonToSheets(parsedData, {
+                        sourceFileName: file.name
+                    });
+                    if (sheets.data) {
+                        allBlocks.push(...sheets.data);
+                    }
+                    fileNames.push(file.name.replace(/\.json$/i, ''));
+                } catch (err) {
+                    console.error('Error parsing file:', file.name, err);
+                }
+
+                processedCount++;
+                if (processedCount === jsonFiles.length) {
+                    // All files processed, display result
+                    if (allBlocks.length === 0) {
+                        alert('No valid data found in files');
+                        return;
+                    }
+
+                    currentData = allBlocks;
+                    currentFileName = jsonFiles.length === 1
+                        ? fileNames[0]
+                        : `merged_${jsonFiles.length}_tagged_files`;
+                    sourceDocumentCount = jsonFiles.length;
+
+                    sheetStructure = { data: allBlocks };
+                    activeSheet = 'data';
+
+                    // Update UI
+                    fileName.textContent = jsonFiles.length === 1
+                        ? jsonFiles[0].name
+                        : `Merged (${jsonFiles.length} tagged files)`;
+
+                    const baseMeta = `1 sheet | ${allBlocks.length} total rows | Tagged Format`;
+                    fileMeta.textContent = jsonFiles.length > 1
+                        ? `${baseMeta} | ${jsonFiles.length} files merged`
+                        : baseMeta;
+
+                    fileInfo.classList.add('show');
+                    tableContainer.classList.add('show');
+
+                    renderSheetTabs();
+                    renderTable();
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
     // Export to XLSX
     function exportToXlsx() {
         if (!sheetStructure || Object.keys(sheetStructure).length === 0) {
@@ -532,7 +817,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const sheet = XLSX.utils.aoa_to_sheet(matrix);
 
             // Set column widths
-            const colWidths = headers.map(h => ({ wch: Math.max(h.length, 15) }));
+            const colWidths = headers.map(header => {
+                const maxCellLength = data.reduce((max, row) => {
+                    const value = row && row[header] !== undefined && row[header] !== null
+                        ? String(row[header])
+                        : '';
+                    const longestLineLength = value
+                        .split(/\r?\n/)
+                        .reduce((lineMax, line) => Math.max(lineMax, line.length), 0);
+                    return Math.max(max, longestLineLength);
+                }, header.length);
+
+                const widthCap = header === 'text'
+                    ? 110
+                    : header === 'heading' || header === 'subheading'
+                        ? 45
+                        : header === 'page_number'
+                            ? 36
+                            : 24;
+
+                return { wch: Math.max(12, Math.min(maxCellLength + 2, widthCap)) };
+            });
             sheet['!cols'] = colWidths;
 
             // Sanitize sheet name (max 31 chars, no special chars)
@@ -794,10 +1099,24 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.value = '';
     });
 
+    // Tagged JSON file input listener
+    taggedFileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            processMultipleTaggedFiles(files);
+        }
+        // Reset input to allow re-selecting same files
+        taggedFileInput.value = '';
+    });
+
     uploadSection.addEventListener('click', (e) => {
-        // The label already opens the file picker via `for="json-file"`.
+        // Labels with a `for` attribute already open the corresponding picker.
         // Avoid triggering a second programmatic click from the parent.
-        if (e.target.closest('label[for="json-file"]') || e.target === fileInput) {
+        if (
+            e.target.closest('label[for]') ||
+            e.target === fileInput ||
+            e.target === taggedFileInput
+        ) {
             return;
         }
         fileInput.click();
