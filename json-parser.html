@@ -361,6 +361,23 @@
             box-shadow: 0 15px 40px rgba(201, 162, 39, 0.4);
         }
 
+        .upload-btn-folder {
+            background: linear-gradient(135deg, var(--teal), var(--emerald));
+            box-shadow: 0 10px 30px rgba(31, 212, 138, 0.25);
+        }
+
+        .upload-btn-folder:hover {
+            box-shadow: 0 15px 40px rgba(31, 212, 138, 0.35);
+        }
+
+        [data-theme="light"] .upload-btn-folder {
+            box-shadow: 0 10px 30px rgba(10, 125, 90, 0.3);
+        }
+
+        [data-theme="light"] .upload-btn-folder:hover {
+            box-shadow: 0 15px 40px rgba(10, 125, 90, 0.4);
+        }
+
         input[type="file"] {
             display: none;
         }
@@ -1030,11 +1047,15 @@
                 <label for="json-file" class="upload-btn">
                     <i class="fa-solid fa-folder-open"></i> Select JSON Files
                 </label>
+                <label for="folder-upload" class="upload-btn upload-btn-folder">
+                    <i class="fa-solid fa-folder-tree"></i> Select Folder
+                </label>
                 <label for="tagged-json-file" class="upload-btn upload-btn-tagged">
                     <i class="fa-solid fa-tags"></i> Tagged JSON
                 </label>
             </div>
             <input type="file" id="json-file" accept=".json" multiple>
+            <input type="file" id="folder-upload" webkitdirectory multiple>
             <input type="file" id="tagged-json-file" accept=".json" multiple>
         </div>
 

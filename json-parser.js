@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDark = document.getElementById('btn-dark');
     const uploadSection = document.getElementById('upload-section');
     const fileInput = document.getElementById('json-file');
+    const folderInput = document.getElementById('folder-upload');
     const taggedFileInput = document.getElementById('tagged-json-file');
     const fileInfo = document.getElementById('file-info');
     const fileName = document.getElementById('file-name');
@@ -864,6 +865,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHead.innerHTML = '';
         tableBody.innerHTML = '';
         fileInput.value = '';
+        folderInput.value = '';
     }
 
     // ========== Multi-File Merge Functions ==========
@@ -1109,12 +1111,34 @@ document.addEventListener('DOMContentLoaded', () => {
         taggedFileInput.value = '';
     });
 
+    // Folder upload input listener
+    folderInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            // Filter only JSON files from the folder
+            const jsonFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.json'));
+            if (jsonFiles.length === 0) {
+                alert('No JSON files found in the selected folder');
+            } else {
+                // If files list is already showing, add to it
+                if (pendingFiles.length > 0) {
+                    addFilesToPending(jsonFiles);
+                } else {
+                    processMultipleFiles(jsonFiles);
+                }
+            }
+        }
+        // Reset input to allow re-selecting same folder
+        folderInput.value = '';
+    });
+
     uploadSection.addEventListener('click', (e) => {
         // Labels with a `for` attribute already open the corresponding picker.
         // Avoid triggering a second programmatic click from the parent.
         if (
             e.target.closest('label[for]') ||
             e.target === fileInput ||
+            e.target === folderInput ||
             e.target === taggedFileInput
         ) {
             return;

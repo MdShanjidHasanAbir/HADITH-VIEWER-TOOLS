@@ -243,11 +243,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const bookNameInput = document.getElementById('merge-book-name');
             if (bookNameInput) bookNameInput.placeholder = t('bookNamePlaceholder');
 
-            const mergeUploadBox = mergeContainer.querySelector('.merge-upload-box span');
+            const mergeUploadBox = mergeContainer.querySelector('.merge-upload-box:not(.folder-upload) span');
             if (mergeUploadBox) mergeUploadBox.textContent = t('selectFilesClick');
 
+            const folderUploadBox = mergeContainer.querySelector('.merge-upload-box.folder-upload span');
+            if (folderUploadBox) folderUploadBox.textContent = t('selectFolderClick');
+
+            const uploadDivider = mergeContainer.querySelector('.upload-divider span');
+            if (uploadDivider) uploadDivider.textContent = t('orText');
+
             const btnDoMerge = document.getElementById('btn-do-merge');
-            if (btnDoMerge && !btnDoMerge.disabled) {
+            if (btnDoMerge) {
                 btnDoMerge.textContent = t('mergeAndSave');
             }
         }
