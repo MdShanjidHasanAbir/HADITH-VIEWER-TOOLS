@@ -344,6 +344,117 @@
             position: relative;
         }
 
+        /* Action Buttons Section - Below Drop Zone */
+        .action-buttons-section {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 20px 30px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            min-width: 160px;
+            text-align: center;
+        }
+
+        .action-btn i {
+            font-size: 1.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .action-btn:hover i {
+            transform: scale(1.1);
+        }
+
+        .action-btn-files {
+            background: linear-gradient(135deg, rgba(63, 227, 194, 0.15), rgba(31, 212, 138, 0.1));
+            color: var(--teal);
+            border-color: rgba(63, 227, 194, 0.3);
+        }
+
+        .action-btn-files:hover {
+            background: linear-gradient(135deg, rgba(63, 227, 194, 0.25), rgba(31, 212, 138, 0.2));
+            border-color: var(--teal);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(63, 227, 194, 0.2);
+        }
+
+        .action-btn-folder {
+            background: linear-gradient(135deg, rgba(31, 212, 138, 0.15), rgba(63, 227, 194, 0.1));
+            color: var(--emerald);
+            border-color: rgba(31, 212, 138, 0.3);
+        }
+
+        .action-btn-folder:hover {
+            background: linear-gradient(135deg, rgba(31, 212, 138, 0.25), rgba(63, 227, 194, 0.2));
+            border-color: var(--emerald);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(31, 212, 138, 0.2);
+        }
+
+        .action-btn-tagged {
+            background: linear-gradient(135deg, rgba(247, 231, 160, 0.15), rgba(215, 179, 90, 0.1));
+            color: var(--gold1);
+            border-color: rgba(247, 231, 160, 0.3);
+        }
+
+        .action-btn-tagged:hover {
+            background: linear-gradient(135deg, rgba(247, 231, 160, 0.25), rgba(215, 179, 90, 0.2));
+            border-color: var(--gold1);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(247, 231, 160, 0.2);
+        }
+
+        [data-theme="light"] .action-btn-files {
+            background: linear-gradient(135deg, rgba(13, 155, 122, 0.12), rgba(10, 125, 90, 0.08));
+            border-color: rgba(13, 155, 122, 0.35);
+        }
+
+        [data-theme="light"] .action-btn-files:hover {
+            background: linear-gradient(135deg, rgba(13, 155, 122, 0.2), rgba(10, 125, 90, 0.15));
+            box-shadow: 0 12px 30px rgba(13, 155, 122, 0.15);
+        }
+
+        [data-theme="light"] .action-btn-folder {
+            background: linear-gradient(135deg, rgba(10, 125, 90, 0.12), rgba(13, 155, 122, 0.08));
+            border-color: rgba(10, 125, 90, 0.35);
+        }
+
+        [data-theme="light"] .action-btn-folder:hover {
+            background: linear-gradient(135deg, rgba(10, 125, 90, 0.2), rgba(13, 155, 122, 0.15));
+            box-shadow: 0 12px 30px rgba(10, 125, 90, 0.15);
+        }
+
+        [data-theme="light"] .action-btn-tagged {
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.12), rgba(166, 133, 32, 0.08));
+            border-color: rgba(201, 162, 39, 0.35);
+        }
+
+        [data-theme="light"] .action-btn-tagged:hover {
+            background: linear-gradient(135deg, rgba(201, 162, 39, 0.2), rgba(166, 133, 32, 0.15));
+            box-shadow: 0 12px 30px rgba(201, 162, 39, 0.15);
+        }
+
+        .action-btn-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
         .upload-btn-tagged {
             background: linear-gradient(135deg, var(--gold1), var(--gold2));
             box-shadow: 0 10px 30px rgba(247, 231, 160, 0.25);
@@ -957,6 +1068,19 @@
                 font-size: 1.5rem;
             }
 
+            .action-buttons-section {
+                gap: 12px;
+            }
+
+            .action-btn {
+                min-width: 140px;
+                padding: 15px 20px;
+            }
+
+            .action-btn i {
+                font-size: 1.5rem;
+            }
+
             .upload-section {
                 padding: 30px 20px;
             }
@@ -1039,21 +1163,30 @@
             <p>Upload any JSON file to preview and export as Excel spreadsheet</p>
         </div>
 
+        <!-- Drop Zone -->
         <div class="upload-section" id="upload-section">
             <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
             <h2>Drop your JSON files here</h2>
-            <p>or click to browse (select multiple files to merge)</p>
-            <div class="upload-buttons">
-                <label for="json-file" class="upload-btn">
-                    <i class="fa-solid fa-folder-open"></i> Select JSON Files
-                </label>
-                <label for="folder-upload" class="upload-btn upload-btn-folder">
-                    <i class="fa-solid fa-folder-tree"></i> Select Folder
-                </label>
-                <label for="tagged-json-file" class="upload-btn upload-btn-tagged">
-                    <i class="fa-solid fa-tags"></i> Tagged JSON
-                </label>
-            </div>
+            <p>Drag & drop files anywhere on this box</p>
+        </div>
+
+        <!-- Action Buttons - Below Drop Zone -->
+        <div class="action-buttons-section">
+            <label for="json-file" class="action-btn action-btn-files">
+                <i class="fa-solid fa-file-code"></i>
+                <span>Select JSON Files</span>
+                <span class="action-btn-label">Choose multiple files</span>
+            </label>
+            <label for="folder-upload" class="action-btn action-btn-folder">
+                <i class="fa-solid fa-folder-tree"></i>
+                <span>Select Folder</span>
+                <span class="action-btn-label">Import entire folder</span>
+            </label>
+            <label for="tagged-json-file" class="action-btn action-btn-tagged">
+                <i class="fa-solid fa-tags"></i>
+                <span>Tagged JSON</span>
+                <span class="action-btn-label">Import tagged format</span>
+            </label>
             <input type="file" id="json-file" accept=".json" multiple>
             <input type="file" id="folder-upload" webkitdirectory multiple>
             <input type="file" id="tagged-json-file" accept=".json" multiple>
