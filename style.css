@@ -1084,12 +1084,38 @@ body.dark-mode .search-result-content mark {
     background: white;
 }
 
+.upload-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.upload-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.upload-divider::before,
+.upload-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.upload-divider span {
+    padding: 0 1rem;
+}
+
 .merge-upload-box {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 2.5rem;
+    padding: 2rem;
     border: 2px dashed var(--border-color);
     border-radius: 12px;
     background: var(--hover-bg);
@@ -1104,10 +1130,18 @@ body.dark-mode .search-result-content mark {
     background: #e6f7ef;
 }
 
+.merge-upload-box.folder-upload {
+    background: linear-gradient(135deg, var(--hover-bg) 0%, rgba(46, 160, 115, 0.05) 100%);
+}
+
+.merge-upload-box.folder-upload:hover {
+    background: linear-gradient(135deg, #e6f7ef 0%, rgba(46, 160, 115, 0.15) 100%);
+}
+
 .merge-upload-box i {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     color: var(--primary);
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
 }
 
 .merge-file-list {
@@ -1126,6 +1160,25 @@ body.dark-mode .search-result-content mark {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     font-size: 0.95rem;
+}
+
+.file-item .file-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.file-item .folder-path {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.file-item .file-name {
+    font-weight: 500;
+    color: var(--text-primary);
 }
 
 .file-item .fa-check-circle {

@@ -158,11 +158,23 @@
 
                         <div class="form-group">
                             <label>JSON ফাইলগুলো নির্বাচন করুন:</label>
-                            <label class="merge-upload-box" for="merge-file-input">
-                                <i class="fa-solid fa-file-circle-plus"></i>
-                                <span>ফাইলগুলো বেছে নিতে এখানে ক্লিক করুন</span>
-                            </label>
-                            <input type="file" id="merge-file-input" accept=".json" multiple hidden>
+                            <div class="upload-options">
+                                <label class="merge-upload-box" for="merge-file-input">
+                                    <i class="fa-solid fa-file-circle-plus"></i>
+                                    <span>ফাইলগুলো বেছে নিতে এখানে ক্লিক করুন</span>
+                                </label>
+                                <input type="file" id="merge-file-input" accept=".json" multiple hidden>
+
+                                <div class="upload-divider">
+                                    <span>অথবা</span>
+                                </div>
+
+                                <label class="merge-upload-box folder-upload" for="merge-folder-input">
+                                    <i class="fa-solid fa-folder-plus"></i>
+                                    <span>ফোল্ডার থেকে ফাইল যোগ করুন</span>
+                                </label>
+                                <input type="file" id="merge-folder-input" webkitdirectory multiple hidden>
+                            </div>
                         </div>
 
                         <div id="merge-file-list" class="merge-file-list">

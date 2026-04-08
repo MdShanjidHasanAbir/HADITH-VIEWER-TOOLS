@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
             bookNamePlaceholder: 'যেমন: সহিহ বুখারী',
             selectFiles: 'JSON ফাইলগুলো নির্বাচন করুন:',
             selectFilesClick: 'ফাইলগুলো বেছে নিতে এখানে ক্লিক করুন',
+            selectFolderClick: 'ফোল্ডার থেকে ফাইল যোগ করুন',
+            orText: 'অথবা',
+            folderFilesAdded: 'টি ফাইল ফোল্ডার থেকে যোগ হয়েছে',
             mergeAndSave: 'মার্জ করুন এবং সেভ করুন',
             merging: 'মার্জ হচ্ছে...',
             xlsxTitle: 'JSON ডাটা XLSX হিসাবে ডাউনলোড',
@@ -104,6 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
             bookNamePlaceholder: 'e.g., Sahih Bukhari',
             selectFiles: 'Select JSON Files:',
             selectFilesClick: 'Click here to select files',
+            selectFolderClick: 'Add files from folder',
+            orText: 'or',
+            folderFilesAdded: 'files added from folder',
             mergeAndSave: 'Merge and Save',
             merging: 'Merging...',
             xlsxTitle: 'Download JSON Data as XLSX',
@@ -342,6 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnOpenMerge = document.getElementById('btn-open-merge');
     const mergeBookName = document.getElementById('merge-book-name');
     const mergeFileInput = document.getElementById('merge-file-input');
+    const mergeFolderInput = document.getElementById('merge-folder-input');
     const mergeFileList = document.getElementById('merge-file-list');
     const btnDoMerge = document.getElementById('btn-do-merge');
     const btnDoMergeXlsx = document.getElementById('btn-do-merge-xlsx');
@@ -1475,6 +1482,46 @@ document.addEventListener('DOMContentLoaded', () => {
         mergeFileInput.value = ''; // reset
     });
 
+    // Folder upload handler - collects files in hierarchy order
+    mergeFolderInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        // Filter only JSON files and sort by relative path (hierarchy order)
+        const jsonFiles = files
+            .filter(f => f.name.toLowerCase().endsWith('.json'))
+            .sort((a, b) => {
+                // Use webkitRelativePath for hierarchy sorting
+                const pathA = a.webkitRelativePath || a.name;
+                const pathB = b.webkitRelativePath || b.name;
+                return pathA.localeCompare(pathB, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+        if (jsonFiles.length === 0) {
+            alert(currentLang === 'bn' ? 'এই ফোল্ডারে কোনো JSON ফাইল নেই।' : 'No JSON files found in this folder.');
+            mergeFolderInput.value = '';
+            return;
+        }
+
+        // Add folder path info to each file for display
+        jsonFiles.forEach(f => {
+            f.folderPath = f.webkitRelativePath ? f.webkitRelativePath.split('/').slice(0, -1).join('/') : '';
+        });
+
+        stagedFiles = [...stagedFiles, ...jsonFiles];
+
+        if (!mergeBookName.value && stagedFiles.length > 0) {
+            // Use folder name as book name if available
+            const firstPath = jsonFiles[0].webkitRelativePath || jsonFiles[0].name;
+            const folderName = firstPath.split('/')[0] || formatBookName(jsonFiles[0].name);
+            mergeBookName.value = t('mergedBook') + " " + folderName;
+        }
+
+        renderStagedFiles();
+        checkMergeValidity();
+        mergeFolderInput.value = ''; // reset
+    });
+
     mergeBookName.addEventListener('input', checkMergeValidity);
 
     function renderStagedFiles() {
@@ -1482,8 +1529,18 @@ document.addEventListener('DOMContentLoaded', () => {
         stagedFiles.forEach((f, idx) => {
             const div = document.createElement('div');
             div.className = 'file-item';
+            // Show relative path if file came from folder upload
+            const displayPath = f.webkitRelativePath || f.name;
+            const pathParts = displayPath.split('/');
+            const fileName = pathParts.pop();
+            const folderPath = pathParts.length > 0 ? pathParts.join('/') + '/' : '';
+
             div.innerHTML = `
-                <div><i class="fa-solid fa-file-code" style="color:var(--text-muted); margin-right:8px;"></i> ${f.name}</div>
+                <div class="file-info">
+                    <i class="fa-solid fa-file-code" style="color:var(--text-muted); margin-right:8px;"></i>
+                    ${folderPath ? `<span class="folder-path">${folderPath}</span>` : ''}
+                    <span class="file-name">${fileName}</span>
+                </div>
                 <i class="fa-solid fa-xmark" style="cursor:pointer;color:#ef4444;" title="${t('deleteFile')}"></i>
             `;
             div.querySelector('.fa-xmark').addEventListener('click', () => {
