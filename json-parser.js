@@ -337,6 +337,36 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Build row for Islamic book tagged format (page, section, section_preface, ch_title, hadith, comment)
+    function buildIslamicTaggedRow({
+        pageNumber = '',
+        chapterTitle = '',
+        section = '',
+        sectionPreface = '',
+        hadith = '',
+        comment = '',
+        sourcePdf = '',
+        sourceFile = '',
+        blockIndex = 1,
+        tagType = ''
+    }) {
+        const pageLabel = normalizePageLabel(pageNumber);
+
+        return {
+            page_number: pageLabel || '',
+            page_number_numeric: extractNumericPageNumber(pageLabel),
+            chapter_title: chapterTitle || '',
+            section: section || '',
+            content: sectionPreface || '',
+            hadith: hadith || '',
+            comment: comment || '',
+            tag_type: tagType || '',
+            source_pdf: sourcePdf || '',
+            source_file: sourceFile || '',
+            block_index: blockIndex
+        };
+    }
+
     function collectTaggedDocuments(data, options = {}) {
         const documents = [];
 
@@ -346,7 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (typeof node === 'string') {
-                if (/<(page_number|heading|sub[-_]?heading|text)>/i.test(node)) {
+                // Check for both original tags and Islamic book format tags
+                if (/<(page_number|heading|sub[-_]?heading|text|page|section|section_preface|ch_title|hadith|comment)>/i.test(node)) {
                     documents.push({
                         rawText: node,
                         sourcePdf: inheritedPdf || '',
@@ -386,6 +417,116 @@ document.addEventListener('DOMContentLoaded', () => {
         return documents;
     }
 
+    // Detect if rawText contains Islamic book format tags
+    function isIslamicBookFormat(rawText) {
+        // Check for presence of Islamic book specific tags
+        const islamicTags = /<(page|section|section_preface|ch_title|hadith|comment)>/i;
+        return islamicTags.test(rawText);
+    }
+
+    // Parse Islamic book tagged format (page, section, section_preface, ch_title, hadith, comment)
+    function parseIslamicTaggedContent(rawText, sourcePdf, sourceFile, startBlockIndex) {
+        const textBlocks = [];
+        let blockIndex = startBlockIndex;
+
+        let currentPageNumber = '';
+        let currentChapterTitle = '';
+        let currentSection = '';
+
+        // Pattern to match all Islamic book tags
+        const tagPattern = /<(page|ch_title|section|section_preface|hadith|comment)>([\s\S]*?)<\/\1>/gi;
+        let match;
+
+        while ((match = tagPattern.exec(rawText)) !== null) {
+            const tagName = match[1].toLowerCase();
+            const content = cleanTaggedContent(match[2]);
+
+            if (tagName === 'page') {
+                currentPageNumber = content;
+            } else if (tagName === 'ch_title') {
+                currentChapterTitle = content;
+                currentSection = ''; // Reset section when new chapter starts
+                // Create a row for chapter title
+                textBlocks.push(buildIslamicTaggedRow({
+                    pageNumber: currentPageNumber,
+                    chapterTitle: content,
+                    section: '',
+                    sectionPreface: '',
+                    hadith: '',
+                    comment: '',
+                    sourcePdf,
+                    sourceFile,
+                    blockIndex,
+                    tagType: 'chapter_title'
+                }));
+                blockIndex++;
+            } else if (tagName === 'section') {
+                currentSection = content;
+                // Create a row for section heading
+                textBlocks.push(buildIslamicTaggedRow({
+                    pageNumber: currentPageNumber,
+                    chapterTitle: currentChapterTitle,
+                    section: content,
+                    sectionPreface: '',
+                    hadith: '',
+                    comment: '',
+                    sourcePdf,
+                    sourceFile,
+                    blockIndex,
+                    tagType: 'section'
+                }));
+                blockIndex++;
+            } else if (tagName === 'section_preface') {
+                // Create a row for section preface/content
+                textBlocks.push(buildIslamicTaggedRow({
+                    pageNumber: currentPageNumber,
+                    chapterTitle: currentChapterTitle,
+                    section: currentSection,
+                    sectionPreface: content,
+                    hadith: '',
+                    comment: '',
+                    sourcePdf,
+                    sourceFile,
+                    blockIndex,
+                    tagType: 'content'
+                }));
+                blockIndex++;
+            } else if (tagName === 'hadith') {
+                // Create a row for hadith
+                textBlocks.push(buildIslamicTaggedRow({
+                    pageNumber: currentPageNumber,
+                    chapterTitle: currentChapterTitle,
+                    section: currentSection,
+                    sectionPreface: '',
+                    hadith: content,
+                    comment: '',
+                    sourcePdf,
+                    sourceFile,
+                    blockIndex,
+                    tagType: 'hadith'
+                }));
+                blockIndex++;
+            } else if (tagName === 'comment') {
+                // Create a row for comment
+                textBlocks.push(buildIslamicTaggedRow({
+                    pageNumber: currentPageNumber,
+                    chapterTitle: currentChapterTitle,
+                    section: currentSection,
+                    sectionPreface: '',
+                    hadith: '',
+                    comment: content,
+                    sourcePdf,
+                    sourceFile,
+                    blockIndex,
+                    tagType: 'comment'
+                }));
+                blockIndex++;
+            }
+        }
+
+        return { blocks: textBlocks, nextBlockIndex: blockIndex };
+    }
+
     // Parse tagged JSON (with HTML-like tags) to structured sheet
     function parseTaggedJsonToSheets(data, options = {}) {
         const sheets = {};
@@ -393,9 +534,32 @@ document.addEventListener('DOMContentLoaded', () => {
         let textBlocks = [];
         let blockIndex = 1;
 
+        // First, check if this is Islamic book format
+        let isIslamicFormat = false;
+        for (const doc of taggedDocs) {
+            const rawText = doc.rawText || '';
+            if (rawText && isIslamicBookFormat(rawText)) {
+                isIslamicFormat = true;
+                break;
+            }
+        }
+
         for (const doc of taggedDocs) {
             const rawText = doc.rawText || '';
             if (!rawText) {
+                continue;
+            }
+
+            // Use Islamic book format parser if detected
+            if (isIslamicFormat) {
+                const result = parseIslamicTaggedContent(
+                    rawText,
+                    doc.sourcePdf,
+                    doc.sourceFile,
+                    blockIndex
+                );
+                textBlocks.push(...result.blocks);
+                blockIndex = result.nextBlockIndex;
                 continue;
             }
 
@@ -832,13 +996,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     return Math.max(max, longestLineLength);
                 }, header.length);
 
-                const widthCap = header === 'text'
-                    ? 110
-                    : header === 'heading' || header === 'subheading'
-                        ? 45
-                        : header === 'page_number'
-                            ? 36
-                            : 24;
+                // Determine width cap based on column type
+                let widthCap = 24; // default
+                if (header === 'text' || header === 'content' || header === 'section_preface') {
+                    widthCap = 110;
+                } else if (header === 'hadith') {
+                    widthCap = 100;
+                } else if (header === 'comment') {
+                    widthCap = 80;
+                } else if (header === 'heading' || header === 'subheading' || header === 'section' || header === 'chapter_title') {
+                    widthCap = 50;
+                } else if (header === 'page_number') {
+                    widthCap = 36;
+                } else if (header === 'tag_type') {
+                    widthCap = 18;
+                }
 
                 return { wch: Math.max(12, Math.min(maxCellLength + 2, widthCap)) };
             });
