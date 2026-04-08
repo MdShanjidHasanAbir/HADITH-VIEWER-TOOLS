@@ -39,21 +39,21 @@ document.addEventListener('DOMContentLoaded', () => {
     function setTheme(theme) {
         const normalizedTheme = theme === 'light' ? 'light' : 'dark';
 
-        if (normalizedTheme === 'light') {
-            html.setAttribute('data-theme', 'light');
-            btnLight?.classList.add('active');
-            btnDark?.classList.remove('active');
-        } else {
-            html.removeAttribute('data-theme');
+        if (normalizedTheme === 'dark') {
+            html.setAttribute('data-theme', 'dark');
             btnDark?.classList.add('active');
             btnLight?.classList.remove('active');
+        } else {
+            html.removeAttribute('data-theme');
+            btnLight?.classList.add('active');
+            btnDark?.classList.remove('active');
         }
 
         localStorage.setItem('json-parser-theme', normalizedTheme);
     }
 
-    // Restore saved theme preference (defaults to dark)
-    const savedTheme = localStorage.getItem('json-parser-theme') || 'dark';
+    // Restore saved theme preference (defaults to light)
+    const savedTheme = localStorage.getItem('json-parser-theme') || 'light';
     setTheme(savedTheme);
 
     btnLight?.addEventListener('click', () => setTheme('light'));
@@ -606,13 +606,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         sheetTabs.classList.add('show');
-        sheetTabs.innerHTML = sheetNames.map(name => {
+
+        const tabsHtml = sheetNames.map(name => {
             const isActive = name === activeSheet ? 'active' : '';
             const rowCount = sheetStructure[name].length;
             const hadisRange = getSheetHadisRange(sheetStructure[name]);
 
             let tabContent = `<span class="sheet-tab-name">${escapeHtml(name)}</span>`;
-            tabContent += `<span class="sheet-tab-count">(${rowCount})</span>`;
+            tabContent += `<span class="sheet-tab-count">(${rowCount} rows)</span>`;
 
             if (hadisRange) {
                 tabContent += `<span class="sheet-tab-range">হাদিস রেঞ্জ: ${escapeHtml(hadisRange)}</span>`;
@@ -620,6 +621,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `<button class="sheet-tab ${isActive}" data-sheet="${name}">${tabContent}</button>`;
         }).join('');
+
+        sheetTabs.innerHTML = `<div class="sheet-tabs-wrapper">${tabsHtml}</div>`;
     }
 
     // Render table for active sheet
@@ -932,9 +935,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render the files list
     function renderFilesList() {
+        const filesCount = document.getElementById('files-count');
+
         if (pendingFiles.length === 0) {
             filesList.classList.remove('show');
             filesItems.innerHTML = '';
+            if (filesCount) filesCount.textContent = '0 files selected';
             return;
         }
 
@@ -942,6 +948,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalRows = pendingFiles.reduce((sum, pf) => sum + pf.rowCount, 0);
         const readyCount = pendingFiles.filter(pf => pf.status === 'ready').length;
+
+        // Update files count
+        if (filesCount) {
+            filesCount.textContent = `${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} selected | ${totalRows} total rows`;
+        }
 
         filesItems.innerHTML = pendingFiles.map((pf, index) => `
             <div class="file-item" data-index="${index}">
@@ -962,22 +973,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `).join('');
-
-        // Add merge info
-        const existingInfo = filesList.querySelector('.merge-info');
-        if (existingInfo) {
-            existingInfo.remove();
-        }
-
-        if (pendingFiles.length > 1) {
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'merge-info';
-            infoDiv.innerHTML = `
-                <i class="fa-solid fa-info-circle"></i>
-                <span>${readyCount} files ready to merge | Total: ${totalRows} rows</span>
-            `;
-            filesList.appendChild(infoDiv);
-        }
     }
 
     // Remove file from pending list
