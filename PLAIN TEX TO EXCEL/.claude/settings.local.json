@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python generate_viewer.py:*)",
+      "Bash(python -m http.server:*)",
+      "Bash(start \"\" \"c:\\\\Users\\\\Maxcode DB\\\\Downloads\\\\PLAIN TEX TO EXCEL\\\\multi_book_viewer.html\")",
+      "Bash(start \"\" \"c:\\\\Users\\\\Maxcode DB\\\\Downloads\\\\PLAIN TEX TO EXCEL\\\\merge_json_files.html\")",
+      "Bash(tr:*)",
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(npx @anthropic-ai/claude-code skills:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(ping:*)",
+      "Bash(git config:*)",
+      "Bash(if not exist output mkdir output)"
+    ]
+  }
+}

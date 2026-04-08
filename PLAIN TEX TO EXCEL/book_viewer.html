@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>General Book Viewer & Processor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --page-bg: #faf6f0;
+    --page-border: #d4c5a9;
+    --text-dark: #2c1810;
+    --text-muted: #6b5b4f;
+    --accent: #8b4513;
+    --accent-light: #d4a574;
+    --arabic-bg: #f0ebe3;
+    --arabic-border: #c9b896;
+    --sidebar-bg: #3b2f24;
+    --sidebar-text: #e8ddd0;
+    --sidebar-hover: #d4a574;
+    --shadow: 0 2px 20px rgba(0,0,0,0.1);
+    --success: #2e7d32;
+    --warning: #ed6c02;
+  }
+
+  body {
+    font-family: 'Noto Sans Bengali', 'Segoe UI', sans-serif;
+    background: #e8e0d4;
+    color: var(--text-dark);
+    line-height: 1.9;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ===== SIDEBAR / TOC ===== */
+  .sidebar {
+    width: 320px;
+    min-width: 320px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 20px;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    text-align: center;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+  }
+
+  .sidebar-back-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 7px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .sidebar-back-link:hover {
+    background: #6b3410;
+    border-color: #6b3410;
+    color: #fff;
+  }
+
+  .sidebar-back-link:focus-visible {
+    outline: 2px solid rgba(212, 165, 116, 0.75);
+    outline-offset: 2px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    margin-bottom: 8px;
+  }
+
+  /* Book Selector */
+  .book-selector {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: rgba(255,255,255,0.1);
+    color: var(--sidebar-text);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+
+  .book-selector:focus {
+    outline: none;
+    border-color: var(--accent-light);
+  }
+
+  .book-selector option {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+  }
+
+  .book-info {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    margin-top: 5px;
+  }
+
+  .toc {
+    list-style: none;
+    margin-top: 15px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    padding-bottom: 20px;
+  }
+
+  .toc-chapter {
+    margin-bottom: 8px;
+  }
+
+  .toc-chapter > a {
+    display: block;
+    padding: 8px 12px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .toc-chapter > a:hover,
+  .toc-chapter > a.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--sidebar-hover);
+  }
+
+  .toc-sections {
+    list-style: none;
+    padding-left: 16px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .toc-chapter.expanded .toc-sections {
+    max-height: 3000px;
+  }
+
+  .toc-sections li a {
+    display: block;
+    padding: 4px 12px;
+    color: rgba(232, 221, 208, 0.7);
+    text-decoration: none;
+    font-size: 0.8rem;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .toc-sections li a:hover,
+  .toc-sections li a.active {
+    color: var(--sidebar-hover);
+    border-left-color: var(--sidebar-hover);
+  }
+
+  .sidebar-footer {
+    flex-shrink: 0;
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.08);
+    color: var(--sidebar-text);
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .sidebar-action:hover {
+    background: rgba(255,255,255,0.14);
+    color: var(--sidebar-hover);
+    border-color: rgba(212,165,116,0.7);
+  }
+
+  .sidebar-action.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .sidebar-action.primary:hover {
+    background: #6b3410;
+  }
+
+  /* ===== HAMBURGER ===== */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 200;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    border: none;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main {
+    margin-left: 320px;
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .book-page {
+    max-width: 780px;
+    width: 100%;
+  }
+
+  /* ===== PROCESSOR VIEW ===== */
+  .processor-view {
+    background: var(--page-bg);
+    border: 1px solid var(--page-border);
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: var(--shadow);
+  }
+
+  .processor-view h2 {
+    color: var(--accent);
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .processor-view .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+    line-height: 1.6;
+  }
+
+  .upload-section {
+    margin-bottom: 30px;
+  }
+
+  .upload-section h3 {
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .upload-section h3 .step-num {
+    background: var(--accent);
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .upload-box {
+    border: 2px dashed var(--page-border);
+    border-radius: 8px;
+    padding: 25px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .upload-box:hover {
+    border-color: var(--accent-light);
+    background: rgba(212,165,116,0.1);
+  }
+
+  .upload-box.has-file {
+    border-color: var(--success);
+    background: rgba(46, 125, 50, 0.08);
+  }
+
+  .upload-box i {
+    font-size: 2rem;
+    color: var(--accent-light);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .upload-box.has-file i {
+    color: var(--success);
+  }
+
+  .upload-box p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .upload-box .file-name {
+    font-weight: 600;
+    color: var(--success);
+    margin-top: 8px;
+  }
+
+  .upload-box input {
+    display: none;
+  }
+
+  .process-btn {
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .process-btn:hover:not(:disabled) {
+    background: #6b3410;
+  }
+
+  .process-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+
+  .process-status {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    display: none;
+  }
+
+  .process-status.show {
+    display: block;
+  }
+
+  .process-status.processing {
+    background: rgba(237, 108, 2, 0.1);
+    border: 1px solid var(--warning);
+    color: var(--warning);
+  }
+
+  .process-status.success {
+    background: rgba(46, 125, 50, 0.1);
+    border: 1px solid var(--success);
+    color: var(--success);
+  }
+
+  .process-status.error {
+    background: rgba(211, 47, 47, 0.1);
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+  }
+
+  .download-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .download-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .download-btn.json {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+  }
+
+  .download-btn.json:hover {
+    background: #1565c0;
+  }
+
+  .download-btn.xlsx {
+    background: #2e7d32;
+    color: #fff;
+    border: none;
+  }
+
+  .download-btn.xlsx:hover {
+    background: #1b5e20;
+  }
+
+  .download-btn.view {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+  }
+
+  .download-btn.view:hover {
+    background: #6b3410;
+  }
+
+  /* ===== CHAPTER ===== */
+  .chapter {
+    background: var(--page-bg);
+    border: 1px solid var(--page-border);
+    border-radius: 4px;
+    padding: 50px 60px;
+    margin-bottom: 40px;
+    box-shadow: var(--shadow), inset 0 0 80px rgba(0,0,0,0.02);
+    position: relative;
+  }
+
+  .chapter::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    border-radius: 4px 0 0 4px;
+  }
+
+  .chapter-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--accent-light);
+    line-height: 1.4;
+  }
+
+  /* ===== SECTION ===== */
+  .section {
+    margin-top: 35px;
+    padding-top: 25px;
+    border-top: 1px dashed var(--page-border);
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 18px;
+    padding-left: 14px;
+    border-left: 3px solid var(--accent-light);
+    line-height: 1.4;
+  }
+
+  /* ===== CONTENT BLOCKS ===== */
+  .bengali-text {
+    font-size: 1.05rem;
+    line-height: 2;
+    margin-bottom: 16px;
+    text-align: justify;
+    color: var(--text-dark);
+  }
+
+  .arabic-text {
+    direction: rtl;
+    font-family: 'Noto Naskh Arabic', 'Traditional Arabic', serif;
+    font-size: 1.25rem;
+    line-height: 2.2;
+    background: var(--arabic-bg);
+    border: 1px solid var(--arabic-border);
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin: 20px 0;
+    text-align: right;
+    color: #1a1200;
+  }
+
+  /* ===== PAGE MARKERS ===== */
+  .page-marker {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 24px 0 8px;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+  }
+
+  .page-marker::before,
+  .page-marker::after {
+    content: ' \2014\2014 ';
+    opacity: 0.4;
+  }
+
+  /* ===== SCROLL TO TOP ===== */
+  .scroll-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 50;
+  }
+
+  .scroll-top.visible {
+    opacity: 1;
+  }
+
+  /* Loading State */
+  .loading {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+  }
+
+  .error-state {
+    text-align: center;
+    padding: 60px;
+    background: var(--page-bg);
+    border: 1px solid var(--page-border);
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 40px auto;
+  }
+
+  .error-state h3 {
+    color: #a94442;
+    margin-bottom: 16px;
+  }
+
+  .error-state p {
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .menu-toggle {
+      display: block;
+    }
+    .main {
+      margin-left: 0;
+      padding: 20px;
+      padding-top: 70px;
+    }
+    .chapter {
+      padding: 30px 25px;
+    }
+    .processor-view {
+      padding: 25px;
+    }
+    .download-buttons {
+      flex-direction: column;
+    }
+  }
+
+  /* ===== MODAL STYLES ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .modal-content {
+    background: var(--page-bg);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    transform: translateY(-20px) scale(0.95);
+    transition: transform 0.3s ease;
+  }
+
+  .modal-overlay.show .modal-content {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 25px;
+    border-bottom: 2px solid var(--accent-light);
+    position: sticky;
+    top: 0;
+    background: var(--page-bg);
+    z-index: 10;
+  }
+
+  .modal-header h2 {
+    color: var(--accent);
+    font-size: 1.4rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .modal-close:hover {
+    color: var(--accent);
+    transform: scale(1.1);
+  }
+
+  .modal-body {
+    padding: 25px;
+  }
+
+  .modal-body .subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 25px;
+    line-height: 1.6;
+  }
+
+  .merge-drop-zone {
+    transition: all 0.3s ease;
+  }
+
+  .merge-drop-zone.dragover {
+    border-color: var(--accent) !important;
+    background: rgba(212,165,116,0.15) !important;
+    transform: translateY(-2px);
+  }
+
+  .merge-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .merge-stats .stat-item {
+    background: rgba(255,255,255,0.6);
+    padding: 14px 10px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--page-border);
+  }
+
+  .merge-stats .stat-value {
+    display: block;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .merge-stats .stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .merge-file-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin: 20px 0;
+    border: 1px solid var(--page-border);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.5);
+  }
+
+  .merge-file-list-header {
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.04);
+    border-bottom: 1px solid var(--page-border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+  }
+
+  .merge-file-item {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+
+  .merge-file-item:last-child {
+    border-bottom: none;
+  }
+
+  .merge-file-item:hover {
+    background: rgba(0,0,0,0.03);
+  }
+
+  .merge-file-item .name {
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.82rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+  }
+
+  .merge-file-item .order {
+    background: var(--accent);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    .sidebar, .menu-toggle, .scroll-top { display: none; }
+    .main { margin-left: 0; padding: 0; }
+    .chapter { box-shadow: none; border: none; page-break-inside: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle">&#9776;</button>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <a class="sidebar-back-link" href="../index.html" title="Go to Hadith Viewer Tools">
+      <i class="fa-solid fa-arrow-left"></i> Back to Hadith Viewer Tools
+    </a>
+    <h2>GENERAL BOOK VIEWER</h2>
+    <select class="book-selector" id="bookSelector">
+      <option value="__processor__">+ Process New Book</option>
+    </select>
+    <p class="book-info" id="bookInfo"></p>
+  </div>
+  <ul class="toc" id="toc"></ul>
+  <div class="sidebar-footer">
+    <button class="sidebar-action primary" id="newProcessBtn" type="button">
+      <i class="fa-solid fa-plus"></i> Process New Book
+    </button>
+    <button class="sidebar-action" id="mergeJsonBtn" type="button">
+      <i class="fa-solid fa-code-merge"></i> Merge JSON Files
+    </button>
+    <button class="sidebar-action" id="exportCurrentBtn" type="button" style="display:none;">
+      <i class="fa-solid fa-download"></i> Export Current Book
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="book-page" id="bookContent">
+    <!-- Processor View -->
+    <div class="processor-view" id="processorView">
+      <h2><i class="fa-solid fa-gears"></i> Book Processor</h2>
+      <p class="subtitle">
+        Upload your extracted text file (.txt) and hierarchy file (.json) to process and view your book.
+        The processor will automatically separate Bengali and Arabic text.
+      </p>
+
+      <div class="upload-section">
+        <h3><span class="step-num">1</span> Upload Text File (.txt)</h3>
+        <label class="upload-box" id="txtUploadBox" for="txtFileInput">
+          <i class="fa-solid fa-file-lines"></i>
+          <p>Click to select your text file</p>
+          <p class="file-name" id="txtFileName"></p>
+          <input type="file" id="txtFileInput" accept=".txt">
+        </label>
+      </div>
+
+      <div class="upload-section">
+        <h3><span class="step-num">2</span> Upload Hierarchy File (.json)</h3>
+        <label class="upload-box" id="jsonUploadBox" for="jsonFileInput">
+          <i class="fa-solid fa-sitemap"></i>
+          <p>Click to select your hierarchy JSON file</p>
+          <p class="file-name" id="jsonFileName"></p>
+          <input type="file" id="jsonFileInput" accept=".json">
+        </label>
+      </div>
+
+      <div class="upload-section">
+        <h3><span class="step-num">3</span> Process & View</h3>
+        <button class="process-btn" id="processBtn" disabled>
+          <i class="fa-solid fa-play"></i> Process Book
+        </button>
+
+        <div class="process-status" id="processStatus"></div>
+
+        <div class="download-buttons" id="downloadButtons" style="display:none;">
+          <button class="download-btn view" id="viewBookBtn">
+            <i class="fa-solid fa-book-open"></i> View Book
+          </button>
+          <button class="download-btn json" id="downloadJsonBtn">
+            <i class="fa-solid fa-file-code"></i> Download JSON
+          </button>
+          <button class="download-btn xlsx" id="downloadXlsxBtn">
+            <i class="fa-solid fa-file-excel"></i> Download XLSX
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- Merge JSON Modal -->
+<div class="modal-overlay" id="mergeModalOverlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><i class="fa-solid fa-code-merge"></i> Merge JSON Files</h2>
+      <button class="modal-close" id="mergeModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="subtitle">
+        Combine multiple extracted JSON files (from PDF extraction) into a single text file for processing.
+      </p>
+
+      <div class="upload-section">
+        <h3><span class="step-num">1</span> Select JSON Files</h3>
+        <label class="upload-box merge-drop-zone" id="mergeDropZone">
+          <i class="fa-solid fa-layer-group"></i>
+          <p>Drop JSON files here or click to select</p>
+          <p class="file-name" id="mergeFileCount"></p>
+        </label>
+        <input type="file" id="mergeFileInput" multiple accept=".json" style="display:none;">
+        <input type="file" id="mergeFolderInput" multiple accept=".json" webkitdirectory style="display:none;">
+
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button class="process-btn" style="flex:1; background: var(--accent-light); color: var(--text-dark);" onclick="document.getElementById('mergeFolderInput').click()">
+            <i class="fa-solid fa-folder-open"></i> Select Folder
+          </button>
+          <button class="process-btn" style="flex:1; background: var(--accent-light); color: var(--text-dark);" onclick="document.getElementById('mergeFileInput').click()">
+            <i class="fa-solid fa-files"></i> Select Files
+          </button>
+        </div>
+      </div>
+
+      <!-- Merge Stats -->
+      <div class="merge-stats" id="mergeStats" style="display:none;">
+        <div class="stat-item">
+          <span class="stat-value" id="mergeFileCountStat">0</span>
+          <span class="stat-label">Files</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="mergeTotalSize">0 KB</span>
+          <span class="stat-label">Total Size</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value" id="mergeOutputSize">0 KB</span>
+          <span class="stat-label">Output Size</span>
+        </div>
+      </div>
+
+      <!-- File List -->
+      <div class="merge-file-list" id="mergeFileList" style="display:none;">
+        <div class="merge-file-list-header">
+          <span>Selected Files (sorted by page number)</span>
+          <span id="mergeFileListCount"></span>
+        </div>
+        <div id="mergeFileListContent"></div>
+      </div>
+
+      <div class="upload-section">
+        <h3><span class="step-num">2</span> Merge & Download</h3>
+        <div style="margin-bottom: 12px;">
+          <label style="display:block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem;">Output File Name</label>
+          <input type="text" id="mergeOutputName" value="merged-output.txt" placeholder="Enter output filename..." style="width:100%; padding: 12px; border: 1px solid var(--page-border); border-radius: 6px; font-size: 0.9rem; font-family: inherit;">
+        </div>
+        <button class="process-btn" id="mergeBtn" disabled>
+          <i class="fa-solid fa-download"></i> Merge & Download
+        </button>
+        <div class="process-status" id="mergeStatus"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="scroll-top" id="scrollTop">&#8593;</button>
+
+<script>
+// ==========================================
+// BOOK PROCESSOR - JavaScript Version
+// ==========================================
+
+// Stored processed books
+const processedBooks = {};
+let currentProcessedBook = null;
+let lastProcessedBookId = null;
+
+// Pre-loaded books index (will be loaded from output folder if available)
+let preloadedBooksIndex = [];
+
+// DOM Elements
+const bookSelector = document.getElementById('bookSelector');
+const bookInfo = document.getElementById('bookInfo');
+const toc = document.getElementById('toc');
+const bookContent = document.getElementById('bookContent');
+const sidebar = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menuToggle');
+const scrollBtn = document.getElementById('scrollTop');
+const processorView = document.getElementById('processorView');
+const newProcessBtn = document.getElementById('newProcessBtn');
+const exportCurrentBtn = document.getElementById('exportCurrentBtn');
+
+// File inputs
+const txtFileInput = document.getElementById('txtFileInput');
+const jsonFileInput = document.getElementById('jsonFileInput');
+const txtUploadBox = document.getElementById('txtUploadBox');
+const jsonUploadBox = document.getElementById('jsonUploadBox');
+const txtFileName = document.getElementById('txtFileName');
+const jsonFileName = document.getElementById('jsonFileName');
+const processBtn = document.getElementById('processBtn');
+const processStatus = document.getElementById('processStatus');
+const downloadButtons = document.getElementById('downloadButtons');
+const viewBookBtn = document.getElementById('viewBookBtn');
+const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+const downloadXlsxBtn = document.getElementById('downloadXlsxBtn');
+
+// State
+let txtFileContent = null;
+let jsonHierarchy = null;
+let txtFilename = '';
+
+// ==========================================
+// PROCESSING FUNCTIONS
+// ==========================================
+
+function detectArabic(text) {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+function processContentTags(content) {
+  // Isolate Arabic text and wrap appropriately
+  const arabicPattern = /([\u0600-\u06FF][\u0600-\u06FF\s\d،؛؟.,\-\(\)\[\]«»\'"{}]+[\u0600-\u06FF]|[\u0600-\u06FF]+)/g;
+
+  const processed = content.replace(arabicPattern, '</c>\n<a>$1</a>\n<c>');
+  return `<c>\n${processed}\n</c>`;
+}
+
+function cleanEmptyTags(text) {
+  return text.replace(/<c>\s*<\/c>/gs, '');
+}
+
+function parseTaggedTextToHtml(text) {
+  if (!text) return '';
+
+  const parts = text.split(/(<[ca]>.*?<\/[ca]>)/gs);
+  let html = '';
+
+  for (const part of parts) {
+    const cMatch = part.match(/<c>(.*?)<\/c>/s);
+    const aMatch = part.match(/<a>(.*?)<\/a>/s);
+
+    if (cMatch) {
+      const lines = cMatch[1].trim().split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        html += `<div class="bengali-text">${lines.join('<br>')}</div>`;
+      }
+    } else if (aMatch) {
+      const lines = aMatch[1].trim().split('\n').filter(l => l.trim());
+      if (lines.length > 0) {
+        html += `<div class="arabic-text">${lines.join('<br>')}</div>`;
+      }
+    }
+  }
+
+  return html;
+}
+
+function processBook(txtContent, hierarchy, bookName) {
+  const chaptersList = hierarchy.map(item => item.chapter);
+  const sectionsList = hierarchy.flatMap(item => item.sections || []);
+
+  let text = txtContent;
+
+  // Convert page_number tags to <p> tags
+  text = text.replace(/<page_number>\s*(.*?)\s*<\/page_number>/gs, '<p>$1</p>');
+
+  // Convert heading tags to chapter/section based on hierarchy
+  text = text.replace(/<heading>\s*(.*?)\s*<\/heading>/gs, (match, rawHeading) => {
+    const cleanHeading = rawHeading.trim().replace(/\s+/g, ' ');
+    if (chaptersList.includes(cleanHeading)) {
+      return `<chapter>${cleanHeading}</chapter>`;
+    } else {
+      return `<section>${cleanHeading}</section>`;
+    }
+  });
+
+  // Process content - wrap text and separate Arabic
+  text = text.replace(/<text>(.*?)<\/text>/gs, (match, content) => {
+    const processed = processContentTags(content.trim());
+    return processed;
+  });
+
+  text = cleanEmptyTags(text);
+
+  // Parse the processed text into structured data
+  const bookData = [];
+  let currentChapter = null;
+  let currentSection = null;
+  let currentPage = null;
+  let currentContentParts = [];
+  let chapterId = 0;
+  let sectionId = 0;
+
+  function flushContent() {
+    if (currentContentParts.length === 0) return;
+
+    // Merge consecutive same-type blocks
+    const merged = [];
+    for (const [tag, txt] of currentContentParts) {
+      if (merged.length > 0 && merged[merged.length - 1][0] === tag) {
+        merged[merged.length - 1] = [tag, merged[merged.length - 1][1] + '\n' + txt];
+      } else {
+        merged.push([tag, txt]);
+      }
+    }
+
+    const combined = merged.map(([tag, txt]) => `<${tag}>${txt}</${tag}>`).join('\n');
+
+    if (currentSection) {
+      currentSection.content.push({
+        page: currentPage || '',
+        text: combined
+      });
+    } else if (currentChapter) {
+      currentChapter.intro_content.push({
+        page: currentPage || '',
+        text: combined
+      });
+    }
+    currentContentParts = [];
+  }
+
+  // Simple XML-like parsing
+  const tagPattern = /<(\/?)(p|chapter|section|c|a)>([^<]*)/g;
+  let match;
+  let lastIndex = 0;
+
+  // Split by tags
+  const tagRegex = /<(p|chapter|section|c|a)>([\s\S]*?)<\/\1>/g;
+  let tagMatch;
+
+  while ((tagMatch = tagRegex.exec(text)) !== null) {
+    const tag = tagMatch[1];
+    const content = tagMatch[2].trim();
+
+    if (!content) continue;
+
+    if (tag === 'p') {
+      currentPage = content;
+    } else if (tag === 'chapter') {
+      flushContent();
+      chapterId++;
+      currentChapter = {
+        id: chapterId,
+        title: content,
+        intro_content: [],
+        sections: []
+      };
+      currentSection = null;
+      bookData.push(currentChapter);
+    } else if (tag === 'section') {
+      flushContent();
+      sectionId++;
+      currentSection = {
+        id: sectionId,
+        title: content,
+        content: []
+      };
+      if (currentChapter) {
+        currentChapter.sections.push(currentSection);
+      }
+    } else if (tag === 'c' || tag === 'a') {
+      currentContentParts.push([tag, content]);
+    }
+  }
+
+  flushContent();
+
+  return {
+    id: bookName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_'),
+    name: bookName,
+    chapters: bookData
+  };
+}
+
+// ==========================================
+// RENDERING FUNCTIONS
+// ==========================================
+
+function buildContentHtml(contentList) {
+  let html = '';
+  for (const item of contentList) {
+    if (item.page) {
+      html += `<div class="page-marker">${item.page}</div>`;
+    }
+    html += parseTaggedTextToHtml(item.text);
+  }
+  return html;
+}
+
+function renderBookFromData(book) {
+  currentProcessedBook = book;
+
+  // Update info
+  bookInfo.textContent = `${book.chapters.length} chapters`;
+
+  // Build TOC
+  let tocHtml = '';
+  for (const ch of book.chapters) {
+    tocHtml += `<li class="toc-chapter"><a href="#ch-${ch.id}">${ch.title}</a>`;
+    if (ch.sections && ch.sections.length > 0) {
+      tocHtml += '<ul class="toc-sections">';
+      for (const sec of ch.sections) {
+        tocHtml += `<li><a href="#sec-${sec.id}">${sec.title}</a></li>`;
+      }
+      tocHtml += '</ul>';
+    }
+    tocHtml += '</li>';
+  }
+  toc.innerHTML = tocHtml;
+
+  // Build body
+  let bodyHtml = '';
+  for (const ch of book.chapters) {
+    bodyHtml += `<div class="chapter" id="ch-${ch.id}">`;
+    bodyHtml += `<h1 class="chapter-title">${ch.title}</h1>`;
+
+    if (ch.intro_content && ch.intro_content.length > 0) {
+      bodyHtml += '<div class="chapter-intro">';
+      bodyHtml += buildContentHtml(ch.intro_content);
+      bodyHtml += '</div>';
+    }
+
+    for (const sec of ch.sections || []) {
+      bodyHtml += `<div class="section" id="sec-${sec.id}">`;
+      bodyHtml += `<h2 class="section-title">${sec.title}</h2>`;
+      bodyHtml += buildContentHtml(sec.content || []);
+      bodyHtml += '</div>';
+    }
+
+    bodyHtml += '</div>';
+  }
+  bookContent.innerHTML = bodyHtml;
+
+  // Show export button
+  exportCurrentBtn.style.display = 'flex';
+
+  // Re-attach TOC event listeners
+  attachTocListeners();
+  attachObserver();
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function showProcessorView() {
+  bookContent.innerHTML = '';
+  bookContent.appendChild(processorView);
+  processorView.style.display = 'block';
+  toc.innerHTML = '';
+  bookInfo.textContent = '';
+  exportCurrentBtn.style.display = 'none';
+  bookSelector.value = '__processor__';
+}
+
+// ==========================================
+// EXPORT FUNCTIONS
+// ==========================================
+
+function downloadJson(book) {
+  const json = JSON.stringify(book, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${book.id}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadXlsx(book) {
+  const wb = XLSX.utils.book_new();
+
+  // Chapters sheet
+  const chaptersData = [['chapter_id', 'title']];
+  for (const ch of book.chapters) {
+    chaptersData.push([ch.id, ch.title]);
+  }
+  const wsChapters = XLSX.utils.aoa_to_sheet(chaptersData);
+  XLSX.utils.book_append_sheet(wb, wsChapters, 'Chapters');
+
+  // Sections sheet
+  const sectionsData = [['section_id', 'chapter_id', 'title']];
+  for (const ch of book.chapters) {
+    for (const sec of ch.sections || []) {
+      sectionsData.push([sec.id, ch.id, sec.title]);
+    }
+  }
+  const wsSections = XLSX.utils.aoa_to_sheet(sectionsData);
+  XLSX.utils.book_append_sheet(wb, wsSections, 'Sections');
+
+  // Content sheet
+  const contentData = [['chapter_id', 'section_id', 'page_number', 'text']];
+  for (const ch of book.chapters) {
+    // Intro content
+    for (const item of ch.intro_content || []) {
+      contentData.push([ch.id, '', item.page || '', item.text || '']);
+    }
+    // Section content
+    for (const sec of ch.sections || []) {
+      for (const item of sec.content || []) {
+        contentData.push([ch.id, sec.id, item.page || '', item.text || '']);
+      }
+    }
+  }
+  const wsContent = XLSX.utils.aoa_to_sheet(contentData);
+  XLSX.utils.book_append_sheet(wb, wsContent, 'Content');
+
+  XLSX.writeFile(wb, `${book.id}.xlsx`);
+}
+
+// ==========================================
+// FILE HANDLING
+// ==========================================
+
+function updateProcessButton() {
+  processBtn.disabled = !(txtFileContent && jsonHierarchy);
+}
+
+txtFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    txtFilename = file.name.replace('.txt', '');
+    txtFileName.textContent = file.name;
+    txtUploadBox.classList.add('has-file');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      txtFileContent = event.target.result;
+      updateProcessButton();
+    };
+    reader.readAsText(file);
+  }
+});
+
+jsonFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    jsonFileName.textContent = file.name;
+    jsonUploadBox.classList.add('has-file');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        jsonHierarchy = JSON.parse(event.target.result);
+        updateProcessButton();
+      } catch (err) {
+        showStatus('error', `Invalid JSON file: ${err.message}`);
+        jsonHierarchy = null;
+        jsonUploadBox.classList.remove('has-file');
+        jsonFileName.textContent = '';
+      }
+    };
+    reader.readAsText(file);
+  }
+});
+
+function showStatus(type, message) {
+  processStatus.className = `process-status show ${type}`;
+  processStatus.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'spinner fa-spin'}"></i> ${message}`;
+}
+
+processBtn.addEventListener('click', () => {
+  if (!txtFileContent || !jsonHierarchy) return;
+
+  showStatus('processing', 'Processing book...');
+  downloadButtons.style.display = 'none';
+
+  setTimeout(() => {
+    try {
+      const bookData = processBook(txtFileContent, jsonHierarchy, txtFilename);
+
+      // Store in processed books
+      processedBooks[bookData.id] = bookData;
+      lastProcessedBookId = bookData.id;
+
+      // Add to selector if not exists
+      const existingOption = Array.from(bookSelector.options).find(opt => opt.value === bookData.id);
+      if (!existingOption) {
+        const option = document.createElement('option');
+        option.value = bookData.id;
+        option.textContent = `${bookData.name} (processed)`;
+        bookSelector.appendChild(option);
+      }
+
+      showStatus('success', `Successfully processed "${bookData.name}" with ${bookData.chapters.length} chapters!`);
+      downloadButtons.style.display = 'flex';
+
+    } catch (err) {
+      showStatus('error', `Error processing book: ${err.message}`);
+      console.error(err);
+    }
+  }, 100);
+});
+
+viewBookBtn.addEventListener('click', () => {
+  if (lastProcessedBookId && processedBooks[lastProcessedBookId]) {
+    bookSelector.value = lastProcessedBookId;
+    renderBookFromData(processedBooks[lastProcessedBookId]);
+  }
+});
+
+downloadJsonBtn.addEventListener('click', () => {
+  if (lastProcessedBookId && processedBooks[lastProcessedBookId]) {
+    downloadJson(processedBooks[lastProcessedBookId]);
+  }
+});
+
+downloadXlsxBtn.addEventListener('click', () => {
+  if (lastProcessedBookId && processedBooks[lastProcessedBookId]) {
+    downloadXlsx(processedBooks[lastProcessedBookId]);
+  }
+});
+
+exportCurrentBtn.addEventListener('click', () => {
+  if (currentProcessedBook) {
+    downloadButtons.style.display = 'flex';
+    // Show download options
+    const choice = confirm('Download as JSON? (Cancel for XLSX)');
+    if (choice) {
+      downloadJson(currentProcessedBook);
+    } else {
+      downloadXlsx(currentProcessedBook);
+    }
+  }
+});
+
+newProcessBtn.addEventListener('click', showProcessorView);
+
+// ==========================================
+// PRELOADED BOOKS
+// ==========================================
+
+// Try to load books index from output folder
+async function loadBooksIndex() {
+  try {
+    const response = await fetch('output/books_index.json');
+    if (!response.ok) return;
+
+    preloadedBooksIndex = await response.json();
+
+    // Add preloaded books to selector
+    for (const book of preloadedBooksIndex) {
+      const option = document.createElement('option');
+      option.value = book.id;
+      option.textContent = book.name;
+      bookSelector.appendChild(option);
+    }
+  } catch (error) {
+    // Silently fail - preloaded books not available (file:// protocol)
+    console.log('Preloaded books not available (this is normal when opening directly in browser)');
+  }
+}
+
+// Load preloaded book from output folder
+async function loadPreloadedBook(bookId) {
+  if (processedBooks[bookId]) {
+    return processedBooks[bookId];
+  }
+
+  bookContent.innerHTML = '<div class="loading">Loading book...</div>';
+
+  try {
+    const response = await fetch(`output/${bookId}.json`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const bookData = await response.json();
+    processedBooks[bookId] = bookData;
+    return bookData;
+  } catch (error) {
+    console.error('Error loading book:', error);
+    // If loading fails, remove the book from selector and show processor
+    const optionToRemove = bookSelector.querySelector(`option[value="${bookId}"]`);
+    if (optionToRemove) optionToRemove.remove();
+
+    showProcessorView();
+    showStatus('error', `Could not load "${bookId}". Please process the book manually.`);
+    return null;
+  }
+}
+
+// ==========================================
+// EVENT LISTENERS
+// ==========================================
+
+bookSelector.addEventListener('change', async (e) => {
+  const bookId = e.target.value;
+
+  if (bookId === '__processor__') {
+    showProcessorView();
+    return;
+  }
+
+  // Check if it's a processed book
+  if (processedBooks[bookId]) {
+    renderBookFromData(processedBooks[bookId]);
+    return;
+  }
+
+  // Try to load from output folder
+  const book = await loadPreloadedBook(bookId);
+  if (book) {
+    renderBookFromData(book);
+  }
+});
+
+function attachTocListeners() {
+  document.querySelectorAll('.toc-chapter > a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const li = link.parentElement;
+      document.querySelectorAll('.toc-chapter').forEach(el => {
+        if (el !== li) el.classList.remove('expanded');
+      });
+      li.classList.toggle('expanded');
+    });
+  });
+
+  sidebar.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      if (window.innerWidth <= 900) sidebar.classList.remove('open');
+    });
+  });
+}
+
+function attachObserver() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.sidebar a[href="#${id}"]`);
+        if (active) {
+          active.classList.add('active');
+          const parentLi = active.closest('.toc-chapter');
+          if (parentLi) parentLi.classList.add('expanded');
+        }
+      }
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.chapter, .section').forEach(el => observer.observe(el));
+}
+
+menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+window.addEventListener('scroll', () => {
+  scrollBtn.classList.toggle('visible', window.scrollY > 400);
+});
+
+scrollBtn.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Initialize
+async function init() {
+  // Always start with processor view
+  showProcessorView();
+
+  // Try to load preloaded books index (will silently fail on file:// protocol)
+  await loadBooksIndex();
+
+  // Initialize merge JSON functionality
+  initMergeJson();
+}
+
+// ==========================================
+// MERGE JSON FUNCTIONALITY
+// ==========================================
+
+let mergeJsonFiles = [];
+let mergedContent = '';
+
+function initMergeJson() {
+  const mergeDropZone = document.getElementById('mergeDropZone');
+  const mergeFileInput = document.getElementById('mergeFileInput');
+  const mergeFolderInput = document.getElementById('mergeFolderInput');
+  const mergeBtn = document.getElementById('mergeBtn');
+  const mergeModalOverlay = document.getElementById('mergeModalOverlay');
+  const mergeModalClose = document.getElementById('mergeModalClose');
+  const mergeJsonBtn = document.getElementById('mergeJsonBtn');
+
+  // Modal open/close handlers
+  mergeJsonBtn.addEventListener('click', () => {
+    mergeModalOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    // Close sidebar on mobile
+    if (window.innerWidth <= 900) {
+      sidebar.classList.remove('open');
+    }
+  });
+
+  mergeModalClose.addEventListener('click', () => {
+    mergeModalOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+  });
+
+  mergeModalOverlay.addEventListener('click', (e) => {
+    if (e.target === mergeModalOverlay) {
+      mergeModalOverlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mergeModalOverlay.classList.contains('show')) {
+      mergeModalOverlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Drag and drop handlers
+  mergeDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.add('dragover');
+  });
+
+  mergeDropZone.addEventListener('dragleave', () => {
+    mergeDropZone.classList.remove('dragover');
+  });
+
+  mergeDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.remove('dragover');
+    handleMergeFiles(e.dataTransfer.files);
+  });
+
+  mergeDropZone.addEventListener('click', () => {
+    mergeFileInput.click();
+  });
+
+  mergeFileInput.addEventListener('change', (e) => {
+    handleMergeFiles(e.target.files);
+  });
+
+  mergeFolderInput.addEventListener('change', (e) => {
+    handleMergeFiles(e.target.files);
+  });
+
+  mergeBtn.addEventListener('click', performMerge);
+}
+
+function extractPageNumber(filename) {
+  const match = filename.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+async function handleMergeFiles(files) {
+  mergeJsonFiles = [];
+  const fileArray = Array.from(files).filter(f => f.name.endsWith('.json'));
+
+  if (fileArray.length === 0) {
+    showMergeStatus('error', 'No JSON files found. Please select files with .json extension.');
+    return;
+  }
+
+  showMergeStatus('processing', 'Loading files...');
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const file of fileArray) {
+    try {
+      const content = await readFileAsync(file);
+      const data = JSON.parse(content);
+      mergeJsonFiles.push({
+        name: file.name,
+        number: extractPageNumber(file.name),
+        size: file.size,
+        rawText: data.rawText || ''
+      });
+      successCount++;
+    } catch (err) {
+      console.error('Error reading file:', file.name, err);
+      errorCount++;
+    }
+  }
+
+  // Sort by page number
+  mergeJsonFiles.sort((a, b) => a.number - b.number);
+
+  updateMergeFileList();
+  updateMergeStats();
+
+  document.getElementById('mergeBtn').disabled = mergeJsonFiles.length === 0;
+  document.getElementById('mergeDropZone').classList.add('has-file');
+  document.getElementById('mergeFileCount').textContent = `${mergeJsonFiles.length} files selected`;
+
+  if (errorCount > 0) {
+    showMergeStatus('processing', `Loaded ${successCount} files. ${errorCount} file(s) could not be read.`);
+  } else {
+    showMergeStatus('success', `Successfully loaded ${mergeJsonFiles.length} JSON file(s). Sorted by page number.`);
+  }
+}
+
+function readFileAsync(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file);
+  });
+}
+
+function updateMergeFileList() {
+  const fileList = document.getElementById('mergeFileList');
+  const fileListContent = document.getElementById('mergeFileListContent');
+  const fileListCount = document.getElementById('mergeFileListCount');
+
+  fileList.style.display = 'block';
+  fileListCount.textContent = `${mergeJsonFiles.length} files`;
+  fileListContent.innerHTML = mergeJsonFiles.map((file, index) => `
+    <div class="merge-file-item">
+      <span class="name" title="${file.name}">${file.name}</span>
+      <span class="order">#${index + 1} - Page ${file.number}</span>
+    </div>
+  `).join('');
+}
+
+function updateMergeStats() {
+  const stats = document.getElementById('mergeStats');
+  stats.style.display = 'grid';
+
+  document.getElementById('mergeFileCountStat').textContent = mergeJsonFiles.length;
+
+  const totalSize = mergeJsonFiles.reduce((sum, f) => sum + f.size, 0);
+  document.getElementById('mergeTotalSize').textContent = formatFileSize(totalSize);
+
+  mergedContent = mergeJsonFiles.map(f => f.rawText).join('\n\n');
+  document.getElementById('mergeOutputSize').textContent = formatFileSize(new Blob([mergedContent]).size);
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function performMerge() {
+  if (mergeJsonFiles.length === 0) {
+    showMergeStatus('error', 'No files selected. Please select JSON files first.');
+    return;
+  }
+
+  mergedContent = mergeJsonFiles.map(f => f.rawText).join('\n\n');
+
+  let outputName = document.getElementById('mergeOutputName').value.trim();
+  if (!outputName) {
+    outputName = 'merged-output.txt';
+  }
+  if (!outputName.toLowerCase().endsWith('.txt')) {
+    outputName += '.txt';
+  }
+
+  // Download the merged file
+  const blob = new Blob([mergedContent], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = outputName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showMergeStatus('success', `Success! "${outputName}" is being downloaded. You can now use this file in the Book Processor above.`);
+}
+
+function showMergeStatus(type, message) {
+  const status = document.getElementById('mergeStatus');
+  status.className = `process-status show ${type}`;
+  status.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'spinner fa-spin'}"></i> ${message}`;
+}
+
+init();
+</script>
+</body>
+</html>

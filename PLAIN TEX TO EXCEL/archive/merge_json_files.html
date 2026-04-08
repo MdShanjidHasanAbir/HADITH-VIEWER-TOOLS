@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON File Merger</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --page-bg: #faf6f0;
+    --page-border: #d4c5a9;
+    --text-dark: #2c1810;
+    --text-muted: #6b5b4f;
+    --accent: #8b4513;
+    --accent-light: #d4a574;
+    --sidebar-bg: #3b2f24;
+    --sidebar-text: #e8ddd0;
+  }
+
+  body {
+    font-family: 'Noto Sans Bengali', 'Segoe UI', sans-serif;
+    background: var(--page-bg);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    color: var(--text-dark);
+  }
+
+  .container {
+    max-width: 100%;
+    margin: 0;
+    background: var(--page-bg);
+    padding: 30px 40px;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--accent-light);
+  }
+
+  .header h1 {
+    color: var(--accent);
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .header p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  /* Drop Zone */
+  .drop-zone {
+    border: 2px dashed var(--accent-light);
+    border-radius: 8px;
+    padding: 35px 25px;
+    text-align: center;
+    background: #f8f4ee;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 18px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    background: #f0ebe3;
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(139, 69, 19, 0.15);
+  }
+
+  .drop-zone-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--accent);
+    border-radius: 10px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: white;
+  }
+
+  .drop-zone h3 {
+    color: var(--text-dark);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .drop-zone p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 3px;
+  }
+
+  .drop-zone .hint {
+    color: #9a8b7a;
+    font-size: 0.78rem;
+    margin-top: 6px;
+  }
+
+  #fileInput, #fileInputMultiple {
+    display: none;
+  }
+
+  /* Button Group */
+  .btn-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .btn-folder {
+    background: var(--accent);
+    color: white;
+    border: 1px solid var(--accent);
+  }
+
+  .btn-folder:hover {
+    background: #a05a1a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139, 69, 19, 0.3);
+  }
+
+  .btn-files {
+    background: var(--accent-light);
+    color: var(--text-dark);
+    border: 1px solid var(--accent-light);
+  }
+
+  .btn-files:hover {
+    background: #c4955a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(212, 165, 116, 0.4);
+  }
+
+  .btn-merge {
+    width: 100%;
+    padding: 14px 22px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--accent) 0%, #a05a1a 100%);
+    color: white;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+
+  .btn-merge:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(139, 69, 19, 0.35);
+  }
+
+  .btn-merge:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 18px 0;
+  }
+
+  .stat-card {
+    background: #f8f4ee;
+    padding: 14px 10px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid var(--page-border);
+  }
+
+  .stat-card .value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .stat-card .label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* File List */
+  .file-list {
+    max-height: 180px;
+    overflow-y: auto;
+    margin: 18px 0;
+    border: 1px solid var(--page-border);
+    border-radius: 8px;
+    background: #f8f4ee;
+  }
+
+  .file-list-header {
+    padding: 10px 14px;
+    background: #f0ebe3;
+    border-bottom: 1px solid var(--page-border);
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .file-item {
+    padding: 8px 14px;
+    border-bottom: 1px solid #e8e0d4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+  }
+
+  .file-item:last-child {
+    border-bottom: none;
+  }
+
+  .file-item:hover {
+    background: #f5f0e8;
+  }
+
+  .file-item .name {
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.82rem;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 10px;
+  }
+
+  .file-item .order {
+    background: var(--accent);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* Output Section */
+  .output-section {
+    margin: 20px 0;
+    padding: 18px;
+    background: #f8f4ee;
+    border-radius: 8px;
+    border: 1px solid var(--page-border);
+  }
+
+  .output-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-dark);
+    font-size: 0.85rem;
+  }
+
+  .output-section input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--page-border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    background: white;
+    font-family: inherit;
+  }
+
+  .output-section input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+  }
+
+  .output-section .hint {
+    font-size: 0.75rem;
+    color: #9a8b7a;
+    margin-top: 6px;
+  }
+
+  /* Status */
+  .status {
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-top: 14px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .status.show {
+    display: block;
+  }
+
+  .status.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+  }
+
+  .status.error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+  }
+
+  .status.info {
+    background: #fff8e1;
+    color: #f57c00;
+    border: 1px solid #ffe082;
+  }
+
+  /* Preview */
+  .preview {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--sidebar-bg);
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', monospace;
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--sidebar-text);
+    border: 1px solid #5a4a3a;
+  }
+
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--page-border);
+  }
+
+  .preview-header h4 {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .preview-header span {
+    color: #9a8b7a;
+    font-size: 0.75rem;
+  }
+
+  /* Scrollbar */
+  .file-list::-webkit-scrollbar,
+  .preview::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .file-list::-webkit-scrollbar-track {
+    background: #f0ebe3;
+    border-radius: 3px;
+  }
+
+  .file-list::-webkit-scrollbar-thumb {
+    background: var(--accent-light);
+    border-radius: 3px;
+  }
+
+  .preview::-webkit-scrollbar-track {
+    background: #2c2218;
+    border-radius: 3px;
+  }
+
+  .preview::-webkit-scrollbar-thumb {
+    background: #6b5b4f;
+    border-radius: 3px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container {
+      padding: 22px 18px;
+    }
+
+    .btn-group {
+      flex-direction: column;
+    }
+
+    .stats {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>JSON File Merger</h1>
+    <p>Combine multiple JSON files into a single text file</p>
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-zone-icon">+</div>
+    <h3>Drop JSON Files Here</h3>
+    <p>or click to browse your files</p>
+    <p class="hint">Supported format: .json files only</p>
+  </div>
+
+  <input type="file" id="fileInput" multiple accept=".json" webkitdirectory>
+  <input type="file" id="fileInputMultiple" multiple accept=".json">
+
+  <!-- Button Group -->
+  <div class="btn-group">
+    <button class="btn btn-folder" onclick="document.getElementById('fileInput').click()">
+      Select Entire Folder
+    </button>
+    <button class="btn btn-files" onclick="document.getElementById('fileInputMultiple').click()">
+      Select Individual Files
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats" style="display: none;">
+    <div class="stat-card">
+      <div class="value" id="fileCount">0</div>
+      <div class="label">Files</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="totalSize">0 KB</div>
+      <div class="label">Total Size</div>
+    </div>
+    <div class="stat-card">
+      <div class="value" id="mergedSize">0 KB</div>
+      <div class="label">Output Size</div>
+    </div>
+  </div>
+
+  <!-- File List -->
+  <div class="file-list" id="fileList" style="display: none;">
+    <div class="file-list-header">
+      <span>Selected Files (sorted by page number)</span>
+      <span id="fileListCount"></span>
+    </div>
+    <div id="fileListContent"></div>
+  </div>
+
+  <!-- Output Section -->
+  <div class="output-section">
+    <label for="outputName">Output File Name</label>
+    <input type="text" id="outputName" value="merged-output.txt" placeholder="Enter your output filename...">
+    <p class="hint">The merged content will be downloaded as a .txt file</p>
+  </div>
+
+  <!-- Merge Button -->
+  <button class="btn-merge" id="mergeBtn" onclick="mergeFiles()" disabled>
+    Merge & Download
+  </button>
+
+  <!-- Status -->
+  <div id="status"></div>
+
+  <!-- Preview Section -->
+  <div id="previewWrapper" style="display: none;">
+    <div class="preview-header">
+      <h4>Preview (first 5000 characters)</h4>
+      <span id="previewInfo"></span>
+    </div>
+    <div class="preview" id="preview"></div>
+  </div>
+</div>
+
+<script>
+let jsonFiles = [];
+let mergedContent = '';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInputMultiple = document.getElementById('fileInputMultiple');
+const fileList = document.getElementById('fileList');
+const fileListContent = document.getElementById('fileListContent');
+const fileListCount = document.getElementById('fileListCount');
+const mergeBtn = document.getElementById('mergeBtn');
+const statusDiv = document.getElementById('status');
+const preview = document.getElementById('preview');
+const previewWrapper = document.getElementById('previewWrapper');
+const previewInfo = document.getElementById('previewInfo');
+const stats = document.getElementById('stats');
+
+// Drag and drop handlers
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+dropZone.addEventListener('click', () => {
+  fileInputMultiple.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+});
+
+fileInputMultiple.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+});
+
+function extractNumber(filename) {
+  const match = filename.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+async function handleFiles(files) {
+  jsonFiles = [];
+  const fileArray = Array.from(files).filter(f => f.name.endsWith('.json'));
+
+  if (fileArray.length === 0) {
+    showStatus('No JSON files found. Please select files with .json extension.', 'error');
+    return;
+  }
+
+  showStatus('Loading files...', 'info');
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const file of fileArray) {
+    try {
+      const content = await readFile(file);
+      const data = JSON.parse(content);
+      jsonFiles.push({
+        name: file.name,
+        number: extractNumber(file.name),
+        size: file.size,
+        rawText: data.rawText || ''
+      });
+      successCount++;
+    } catch (err) {
+      console.error('Error reading file:', file.name, err);
+      errorCount++;
+    }
+  }
+
+  jsonFiles.sort((a, b) => a.number - b.number);
+
+  updateFileList();
+  updateStats();
+
+  mergeBtn.disabled = jsonFiles.length === 0;
+
+  if (errorCount > 0) {
+    showStatus(`Loaded ${successCount} files successfully. ${errorCount} file(s) could not be read.`, 'info');
+  } else {
+    showStatus(`Successfully loaded ${jsonFiles.length} JSON file(s). Files sorted in ascending order.`, 'success');
+  }
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file);
+  });
+}
+
+function updateFileList() {
+  fileList.style.display = 'block';
+  fileListCount.textContent = `${jsonFiles.length} files`;
+  fileListContent.innerHTML = jsonFiles.map((file, index) => `
+    <div class="file-item">
+      <span class="name" title="${file.name}">${file.name}</span>
+      <span class="order">#${index + 1} - Page ${file.number}</span>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  stats.style.display = 'grid';
+  document.getElementById('fileCount').textContent = jsonFiles.length;
+
+  const totalSize = jsonFiles.reduce((sum, f) => sum + f.size, 0);
+  document.getElementById('totalSize').textContent = formatSize(totalSize);
+
+  mergedContent = jsonFiles.map(f => f.rawText).join('\n\n');
+  document.getElementById('mergedSize').textContent = formatSize(new Blob([mergedContent]).size);
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function mergeFiles() {
+  if (jsonFiles.length === 0) {
+    showStatus('No files selected. Please select JSON files first.', 'error');
+    return;
+  }
+
+  mergedContent = jsonFiles.map(f => f.rawText).join('\n\n');
+
+  previewWrapper.style.display = 'block';
+  previewInfo.textContent = `Total: ${mergedContent.length.toLocaleString()} characters`;
+  preview.textContent = mergedContent.substring(0, 5000) + (mergedContent.length > 5000 ? '\n\n... [Preview truncated] ...' : '');
+
+  let outputName = document.getElementById('outputName').value.trim();
+  if (!outputName) {
+    outputName = 'merged-output.txt';
+  }
+  if (!outputName.toLowerCase().endsWith('.txt')) {
+    outputName += '.txt';
+  }
+
+  downloadFile(mergedContent, outputName);
+
+  showStatus(`Success! "${outputName}" is being downloaded.`, 'success');
+}
+
+function downloadFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function showStatus(message, type) {
+  statusDiv.className = 'status show ' + type;
+  statusDiv.textContent = message;
+}
+</script>
+
+</body>
+</html>

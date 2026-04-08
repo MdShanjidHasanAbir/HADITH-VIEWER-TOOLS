@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="bn" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi Book Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --page-bg: #faf6f0;
+    --page-border: #d4c5a9;
+    --text-dark: #2c1810;
+    --text-muted: #6b5b4f;
+    --accent: #8b4513;
+    --accent-light: #d4a574;
+    --arabic-bg: #f0ebe3;
+    --arabic-border: #c9b896;
+    --sidebar-bg: #3b2f24;
+    --sidebar-text: #e8ddd0;
+    --sidebar-hover: #d4a574;
+    --shadow: 0 2px 20px rgba(0,0,0,0.1);
+    --primary: #667eea;
+    --primary-dark: #5a67d8;
+  }
+
+  body {
+    font-family: 'Noto Sans Bengali', 'Segoe UI', sans-serif;
+    background: #e8e0d4;
+    color: var(--text-dark);
+    line-height: 1.9;
+    min-height: 100vh;
+  }
+
+  /* ===== BOOK SELECTOR HEADER ===== */
+  .book-selector-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 300;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .book-selector-bar h2 {
+    color: white;
+    font-size: 1.1rem;
+    white-space: nowrap;
+  }
+
+  .book-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .book-tab {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .book-tab:hover {
+    background: rgba(255,255,255,0.3);
+  }
+
+  .book-tab.active {
+    background: white;
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .book-tab .close-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .book-tab .close-btn:hover {
+    background: rgba(0,0,0,0.4);
+  }
+
+  .add-book-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 2px dashed rgba(255,255,255,0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+  }
+
+  .add-book-btn:hover {
+    background: rgba(255,255,255,0.3);
+    border-color: white;
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  .app-container {
+    display: flex;
+    min-height: 100vh;
+    padding-top: 60px;
+  }
+
+  /* ===== SIDEBAR / TOC ===== */
+  .sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 30px 20px;
+    overflow-y: auto;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    height: calc(100vh - 60px);
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-header p {
+    font-size: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .toc {
+    list-style: none;
+  }
+
+  .toc-chapter {
+    margin-bottom: 8px;
+  }
+
+  .toc-chapter > a {
+    display: block;
+    padding: 8px 12px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .toc-chapter > a:hover,
+  .toc-chapter > a.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--sidebar-hover);
+  }
+
+  .toc-sections {
+    list-style: none;
+    padding-left: 16px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+
+  .toc-chapter.expanded .toc-sections {
+    max-height: 2000px;
+  }
+
+  .toc-sections li a {
+    display: block;
+    padding: 4px 12px;
+    color: rgba(232, 221, 208, 0.7);
+    text-decoration: none;
+    font-size: 0.85rem;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .toc-sections li a:hover,
+  .toc-sections li a.active {
+    color: var(--sidebar-hover);
+    border-left-color: var(--sidebar-hover);
+  }
+
+  /* ===== HAMBURGER ===== */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 70px;
+    left: 15px;
+    z-index: 200;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    border: none;
+    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main {
+    margin-left: 300px;
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .book-page {
+    max-width: 780px;
+    width: 100%;
+  }
+
+  /* ===== CHAPTER ===== */
+  .chapter {
+    background: var(--page-bg);
+    border: 1px solid var(--page-border);
+    border-radius: 4px;
+    padding: 50px 60px;
+    margin-bottom: 40px;
+    box-shadow: var(--shadow), inset 0 0 80px rgba(0,0,0,0.02);
+    position: relative;
+  }
+
+  .chapter::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    border-radius: 4px 0 0 4px;
+  }
+
+  .chapter-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--accent-light);
+    line-height: 1.4;
+  }
+
+  /* ===== SECTION ===== */
+  .section {
+    margin-top: 35px;
+    padding-top: 25px;
+    border-top: 1px dashed var(--page-border);
+  }
+
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 18px;
+    padding-left: 14px;
+    border-left: 3px solid var(--accent-light);
+    line-height: 1.4;
+  }
+
+  /* ===== CONTENT BLOCKS ===== */
+  .bengali-text {
+    font-size: 1.05rem;
+    line-height: 2;
+    margin-bottom: 16px;
+    text-align: justify;
+    color: var(--text-dark);
+  }
+
+  .arabic-text {
+    direction: rtl;
+    font-family: 'Noto Naskh Arabic', 'Traditional Arabic', serif;
+    font-size: 1.25rem;
+    line-height: 2.2;
+    background: var(--arabic-bg);
+    border: 1px solid var(--arabic-border);
+    border-radius: 6px;
+    padding: 18px 24px;
+    margin: 20px 0;
+    text-align: right;
+    color: #1a1200;
+  }
+
+  /* ===== PAGE MARKERS ===== */
+  .page-marker {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 24px 0 8px;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+  }
+
+  .page-marker::before,
+  .page-marker::after {
+    content: ' \2014\2014 ';
+    opacity: 0.4;
+  }
+
+  /* ===== SCROLL TO TOP ===== */
+  .scroll-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 50;
+  }
+
+  .scroll-top.visible {
+    opacity: 1;
+  }
+
+  /* ===== WELCOME SCREEN ===== */
+  .welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .welcome-screen h1 {
+    font-size: 2rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+  }
+
+  .welcome-screen p {
+    color: var(--text-muted);
+    margin-bottom: 30px;
+    max-width: 500px;
+  }
+
+  .welcome-screen .upload-area {
+    border: 3px dashed var(--accent-light);
+    border-radius: 16px;
+    padding: 60px 80px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--page-bg);
+  }
+
+  .welcome-screen .upload-area:hover {
+    background: #f5f0e8;
+    border-color: var(--accent);
+  }
+
+  .welcome-screen .upload-area h3 {
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  #fileInputHidden {
+    display: none;
+  }
+
+  /* ===== LOADING ===== */
+  .loading {
+    text-align: center;
+    padding: 60px;
+    color: var(--text-muted);
+  }
+
+  .loading::after {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border: 3px solid var(--accent-light);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .menu-toggle {
+      display: block;
+    }
+    .main {
+      margin-left: 0;
+      padding: 20px;
+      padding-top: 70px;
+    }
+    .chapter {
+      padding: 30px 25px;
+    }
+    .book-selector-bar {
+      flex-wrap: wrap;
+      padding: 10px 15px;
+    }
+    .book-tabs {
+      order: 3;
+      width: 100%;
+      margin-top: 10px;
+    }
+  }
+
+  /* ===== PRINT ===== */
+  @media print {
+    .sidebar, .menu-toggle, .scroll-top, .book-selector-bar { display: none; }
+    .main { margin-left: 0; padding: 0; }
+    .app-container { padding-top: 0; }
+    .chapter { box-shadow: none; border: none; page-break-inside: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="book-selector-bar">
+  <h2>Book Viewer</h2>
+  <div class="book-tabs" id="bookTabs">
+    <!-- Book tabs will be added here -->
+  </div>
+  <button class="add-book-btn" onclick="document.getElementById('fileInputHidden').click()">
+    + Add Book
+  </button>
+</div>
+
+<input type="file" id="fileInputHidden" multiple accept=".txt">
+
+<button class="menu-toggle" id="menuToggle">&#9776;</button>
+
+<div class="app-container">
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2 id="sidebarTitle">Book Viewer</h2>
+      <p id="sidebarSubtitle">Select a book to view</p>
+    </div>
+    <ul class="toc" id="tocList">
+      <!-- TOC will be generated here -->
+    </ul>
+  </nav>
+
+  <main class="main">
+    <div class="book-page" id="bookContent">
+      <div class="welcome-screen" id="welcomeScreen">
+        <h1>Multi Book Viewer</h1>
+        <p>Combined .txt file load korun ba drag & drop korun. Multiple book add kore tab e switch korte parben.</p>
+        <div class="upload-area" onclick="document.getElementById('fileInputHidden').click()">
+          <h3>.txt Files Upload Korun</h3>
+          <p>Click korun ba drag & drop korun</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<button class="scroll-top" id="scrollTop">&#8679;</button>
+
+<script>
+// Global state
+const books = [];
+let activeBookIndex = -1;
+
+// DOM elements
+const bookTabs = document.getElementById('bookTabs');
+const bookContent = document.getElementById('bookContent');
+const welcomeScreen = document.getElementById('welcomeScreen');
+const sidebarTitle = document.getElementById('sidebarTitle');
+const sidebarSubtitle = document.getElementById('sidebarSubtitle');
+const tocList = document.getElementById('tocList');
+const sidebar = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menuToggle');
+const scrollBtn = document.getElementById('scrollTop');
+const fileInput = document.getElementById('fileInputHidden');
+
+// File input handler
+fileInput.addEventListener('change', (e) => {
+  handleFiles(e.target.files);
+});
+
+// Drag and drop
+document.body.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+document.body.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  handleFiles(e.dataTransfer.files);
+});
+
+// Mobile menu toggle
+menuToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+// Close sidebar on link click (mobile)
+sidebar.addEventListener('click', (e) => {
+  if (e.target.tagName === 'A' && window.innerWidth <= 900) {
+    sidebar.classList.remove('open');
+  }
+});
+
+// Scroll to top button
+window.addEventListener('scroll', () => {
+  scrollBtn.classList.toggle('visible', window.scrollY > 400);
+});
+
+scrollBtn.addEventListener('click', () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+async function handleFiles(files) {
+  const txtFiles = Array.from(files).filter(f => f.name.endsWith('.txt'));
+
+  for (const file of txtFiles) {
+    const content = await readFile(file);
+    const bookName = file.name.replace('.txt', '');
+
+    // Check if book already exists
+    const existingIndex = books.findIndex(b => b.name === bookName);
+    if (existingIndex >= 0) {
+      // Update existing book
+      books[existingIndex].content = content;
+      books[existingIndex].parsed = parseContent(content);
+      if (activeBookIndex === existingIndex) {
+        renderBook(existingIndex);
+      }
+    } else {
+      // Add new book
+      books.push({
+        name: bookName,
+        content: content,
+        parsed: parseContent(content)
+      });
+    }
+  }
+
+  updateBookTabs();
+
+  // Auto-select first book if none selected
+  if (activeBookIndex === -1 && books.length > 0) {
+    selectBook(0);
+  }
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file);
+  });
+}
+
+function parseContent(content) {
+  const parsed = {
+    chapters: [],
+    sections: []
+  };
+
+  // First, parse tagged blocks (<heading>, <sub_heading>, <text>, <page_number>)
+  const lines = content.split('\n');
+  let currentType = null;
+  let buffer = [];
+  const blocks = [];
+
+  function flushBufferToBlocks() {
+    if (buffer.length === 0) return;
+    const text = buffer.join('\n').trim();
+    buffer = [];
+    if (!text) return;
+    blocks.push({ type: currentType || 'text', text });
+  }
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (trimmed === '<heading>') {
+      flushBufferToBlocks();
+      currentType = 'heading';
+    } else if (trimmed === '</heading>') {
+      flushBufferToBlocks();
+      currentType = null;
+    } else if (trimmed === '<sub_heading>') {
+      flushBufferToBlocks();
+      currentType = 'sub_heading';
+    } else if (trimmed === '</sub_heading>') {
+      flushBufferToBlocks();
+      currentType = null;
+    } else if (trimmed === '<page_number>') {
+      flushBufferToBlocks();
+      currentType = 'page_number';
+    } else if (trimmed === '</page_number>') {
+      flushBufferToBlocks();
+      currentType = null;
+    } else if (trimmed === '<text>') {
+      flushBufferToBlocks();
+      currentType = 'text';
+    } else if (trimmed === '</text>') {
+      flushBufferToBlocks();
+      currentType = null;
+    } else {
+      buffer.push(line);
+    }
+  }
+  flushBufferToBlocks();
+
+  const headingCount = blocks.filter(b => b.type === 'heading').length;
+  const subHeadingCount = blocks.filter(b => b.type === 'sub_heading').length;
+
+  // Smart mode for legacy files where everything is tagged as <heading>
+  // (e.g. 100+ headings and no <sub_heading> tags).
+  const useSmartHeadingMode = subHeadingCount === 0 && headingCount > 50;
+
+  let currentChapter = null;
+  let currentSection = null;
+  let chapterCount = 0;
+  let sectionCount = 0;
+  let ordinalSectionRun = 0;
+
+  const ordinalHeadingRegex = /^(?:\d+|[০-৯]+|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|প্রথম|দ্বিতীয়|দ্বিতীয়|তৃতীয়|তৃতীয়|চতুর্থ|পঞ্চম|ষষ্ঠ|সপ্তম|অষ্টম|নবম|দশম|একাদশ|দ্বাদশ)\b/i;
+
+  function normalizeText(text) {
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  function isNumericOnly(text) {
+    return /^[0-9০-৯]+$/.test(text);
+  }
+
+  function isMeaningfulTextBlock(block) {
+    if (!block || block.type !== 'text') return false;
+    const normalized = normalizeText(block.text);
+    if (!normalized) return false;
+    if (isNumericOnly(normalized)) return false;
+    return true;
+  }
+
+  function addChapter(title) {
+    chapterCount++;
+    currentChapter = {
+      id: `ch-${chapterCount}`,
+      title,
+      sections: [],
+      content: []
+    };
+    parsed.chapters.push(currentChapter);
+    currentSection = null;
+  }
+
+  function addSection(title) {
+    if (!currentChapter) {
+      addChapter('Content');
+    }
+    sectionCount++;
+    currentSection = {
+      id: `sec-${sectionCount}`,
+      title,
+      content: []
+    };
+    currentChapter.sections.push(currentSection);
+    parsed.sections.push(currentSection);
+  }
+
+  function appendContent(block) {
+    const target = currentSection || currentChapter;
+    if (!target) return;
+
+    if (block.type === 'page_number') {
+      target.content.push({ type: 'page', text: block.text });
+      return;
+    }
+
+    if (block.type === 'text') {
+      const isArabic = /[\u0600-\u06FF]/.test(block.text) && !/[\u0980-\u09FF]/.test(block.text);
+      target.content.push({ type: isArabic ? 'arabic' : 'text', text: block.text });
+    }
+  }
+
+  function inspectHeadingBoundary(startIndex) {
+    let sawMeaningfulText = false;
+
+    for (let i = startIndex + 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      if (block.type === 'heading') {
+        const nextHeadingTitle = normalizeText(block.text);
+        const nextHeadingIsOrdinal = ordinalHeadingRegex.test(nextHeadingTitle);
+        return {
+          isLastHeading: false,
+          noMeaningfulTextBeforeNextHeading: !sawMeaningfulText,
+          nextHeadingIsOrdinal
+        };
+      }
+      if (isMeaningfulTextBlock(block)) {
+        sawMeaningfulText = true;
+      }
+    }
+
+    return {
+      isLastHeading: true,
+      noMeaningfulTextBeforeNextHeading: false,
+      nextHeadingIsOrdinal: false
+    };
+  }
+
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    if (block.type === 'heading') {
+      if (!useSmartHeadingMode) {
+        addChapter(block.text);
+        continue;
+      }
+
+      const title = normalizeText(block.text);
+      const isOrdinalHeading = ordinalHeadingRegex.test(title);
+      const looksStandalone = title.split(/\s+/).filter(Boolean).length <= 4 && !/[,:;!?]/.test(title);
+      const boundary = inspectHeadingBoundary(i);
+
+      const shouldStartNewChapter = !currentChapter
+        || (boundary.noMeaningfulTextBeforeNextHeading && !boundary.nextHeadingIsOrdinal)
+        || boundary.isLastHeading
+        || (ordinalSectionRun >= 8 && !isOrdinalHeading && looksStandalone);
+
+      if (shouldStartNewChapter) {
+        addChapter(block.text);
+        ordinalSectionRun = 0;
+      } else {
+        addSection(block.text);
+        ordinalSectionRun = isOrdinalHeading ? ordinalSectionRun + 1 : 0;
+      }
+
+      continue;
+    }
+
+    if (block.type === 'sub_heading') {
+      addSection(block.text);
+      continue;
+    }
+
+    appendContent(block);
+  }
+
+  // If no chapters found, create one default chapter
+  if (parsed.chapters.length === 0 && content.trim()) {
+    parsed.chapters.push({
+      id: 'ch-1',
+      title: 'Content',
+      sections: [],
+      content: [{ type: 'text', text: content }]
+    });
+  }
+
+  return parsed;
+}
+
+function updateBookTabs() {
+  bookTabs.innerHTML = books.map((book, index) => `
+    <button class="book-tab ${index === activeBookIndex ? 'active' : ''}" onclick="selectBook(${index})">
+      ${book.name}
+      <span class="close-btn" onclick="event.stopPropagation(); removeBook(${index})">x</span>
+    </button>
+  `).join('');
+}
+
+function selectBook(index) {
+  if (index < 0 || index >= books.length) return;
+
+  activeBookIndex = index;
+  updateBookTabs();
+  renderBook(index);
+}
+
+function removeBook(index) {
+  books.splice(index, 1);
+
+  if (books.length === 0) {
+    activeBookIndex = -1;
+    bookContent.innerHTML = `
+      <div class="welcome-screen">
+        <h1>Multi Book Viewer</h1>
+        <p>Combined .txt file load korun ba drag & drop korun. Multiple book add kore tab e switch korte parben.</p>
+        <div class="upload-area" onclick="document.getElementById('fileInputHidden').click()">
+          <h3>.txt Files Upload Korun</h3>
+          <p>Click korun ba drag & drop korun</p>
+        </div>
+      </div>
+    `;
+    sidebarTitle.textContent = 'Book Viewer';
+    sidebarSubtitle.textContent = 'Select a book to view';
+    tocList.innerHTML = '';
+  } else {
+    if (activeBookIndex >= books.length) {
+      activeBookIndex = books.length - 1;
+    }
+    selectBook(activeBookIndex);
+  }
+
+  updateBookTabs();
+}
+
+function renderBook(index) {
+  const book = books[index];
+  if (!book) return;
+
+  sidebarTitle.textContent = book.name;
+  sidebarSubtitle.textContent = `${book.parsed.chapters.length} Chapters`;
+
+  // Render TOC
+  tocList.innerHTML = book.parsed.chapters.map(chapter => `
+    <li class="toc-chapter">
+      <a href="#${chapter.id}">${chapter.title}</a>
+      ${chapter.sections.length > 0 ? `
+        <ul class="toc-sections">
+          ${chapter.sections.map(sec => `
+            <li><a href="#${sec.id}">${sec.title}</a></li>
+          `).join('')}
+        </ul>
+      ` : ''}
+    </li>
+  `).join('');
+
+  // Render content
+  bookContent.innerHTML = book.parsed.chapters.map(chapter => `
+    <div class="chapter" id="${chapter.id}">
+      <h1 class="chapter-title">${chapter.title}</h1>
+      <div class="chapter-intro">
+        ${renderContentItems(chapter.content)}
+      </div>
+      ${chapter.sections.map(sec => `
+        <div class="section" id="${sec.id}">
+          <h2 class="section-title">${sec.title}</h2>
+          ${renderContentItems(sec.content)}
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  // Setup TOC interactions
+  setupTocInteractions();
+  setupIntersectionObserver();
+}
+
+function renderContentItems(items) {
+  return items.map(item => {
+    if (item.type === 'page') {
+      return `<div class="page-marker">${item.text}</div>`;
+    } else if (item.type === 'arabic') {
+      return `<div class="arabic-text">${item.text.replace(/\n/g, '<br>')}</div>`;
+    } else {
+      return `<div class="bengali-text">${item.text.replace(/\n/g, '<br>')}</div>`;
+    }
+  }).join('');
+}
+
+function setupTocInteractions() {
+  // Expand/collapse TOC chapters
+  document.querySelectorAll('.toc-chapter > a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const li = link.parentElement;
+      document.querySelectorAll('.toc-chapter').forEach(el => {
+        if (el !== li) el.classList.remove('expanded');
+      });
+      li.classList.toggle('expanded');
+    });
+  });
+}
+
+function setupIntersectionObserver() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+        const active = document.querySelector(`.sidebar a[href="#${id}"]`);
+        if (active) {
+          active.classList.add('active');
+          const parentLi = active.closest('.toc-chapter');
+          if (parentLi) parentLi.classList.add('expanded');
+        }
+      }
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.chapter, .section').forEach(el => observer.observe(el));
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Check for any pre-loaded content
+  if (books.length === 0) {
+    welcomeScreen.style.display = 'flex';
+  }
+});
+</script>
+
+</body>
+</html>
