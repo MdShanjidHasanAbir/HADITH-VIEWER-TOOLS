@@ -1970,19 +1970,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const arabicText = h.ar ? `<div class="hadith-arabic" dir="rtl">${String(h.ar).replace(/\\n|\n/g, '<br>')}</div>` : '';
             const narratorText = h.narrator ? `<div class="hadith-narrator">${escapeHtml(h.narrator)} ${t('narratedFrom')}</div>` : '';
 
-            // Convert display_number to string before split, handle both "1/2" format and plain numbers
+            // Show display_number as-is (supports values like "8/1", "5/2" and plain numbers)
             let hadithNumDisplay;
-            if (h.display_number != null) {
-                const displayStr = String(h.display_number);
-                if (displayStr.includes('/')) {
-                    const numPart = displayStr.split('/')[1] || h.hadith_id;
-                    hadithNumDisplay = currentLang === 'bn' ? toBnNum(numPart) : numPart;
-                } else {
-                    hadithNumDisplay = currentLang === 'bn' ? toBnNum(displayStr) : displayStr;
-                }
+            if (h.display_number != null && String(h.display_number).trim() !== '') {
+                const displayStr = String(h.display_number).trim();
+                hadithNumDisplay = currentLang === 'bn' ? toBnNum(displayStr) : displayStr;
             } else {
                 hadithNumDisplay = currentLang === 'bn' ? toBnNum(h.hadith_id) : h.hadith_id;
             }
+            const hadithNumDisplaySafe = escapeHtml(String(hadithNumDisplay));
 
             // Store hadith index for editing
             const hadithIndex = book.hadiths.indexOf(h);
@@ -1994,13 +1990,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="hadith-header">
                     <div class="hadith-meta">
                         <i class="fa-solid fa-book-open"></i>
-                        ${t('hadithNo')} ${hadithNumDisplay}
+                        ${t('hadithNo')} ${hadithNumDisplaySafe}
                     </div>
                     <div class="hadith-actions">
                         ${badge}
                         <button class="edit-btn" title="${t('edit')}"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button class="save-btn" title="${t('save')}" style="display:none;"><i class="fa-solid fa-floppy-disk"></i></button>
-                        <span class="hadith-id-num">${h.hadith_id}</span>
+                        <span class="hadith-id-num">ID: ${escapeHtml(String(h.hadith_id ?? ''))}</span>
                     </div>
                 </div>
                 ${arabicText}
@@ -2368,7 +2364,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="search-result-book">${escapeHtml(result.book.name)}</span>
                         <span class="search-result-chapter">${escapeHtml(chapterTitle)}</span>
                     </div>
-                    <span class="search-result-hadith-id">${hadithLabel} ${hadithIdDisplay}</span>
+                    <span class="search-result-hadith-id">${hadithLabel} ID: ${hadithIdDisplay}</span>
                 </div>
                 <div class="search-result-content">${contentPreview}</div>
             `;
