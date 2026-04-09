@@ -60,6 +60,31 @@ document.addEventListener('DOMContentLoaded', () => {
     btnLight?.addEventListener('click', () => setTheme('light'));
     btnDark?.addEventListener('click', () => setTheme('dark'));
 
+    // Toggle card functionality (single-open accordion behavior)
+    const toggleHeaders = Array.from(document.querySelectorAll('.toggle-card-header'));
+    const toggleCards = Array.from(document.querySelectorAll('.action-card-toggle'));
+
+    toggleHeaders.forEach((header) => {
+        header.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            const card = header.closest('.action-card-toggle');
+            if (!card) return;
+
+            const shouldExpand = !card.classList.contains('expanded');
+
+            // Always close all cards first to avoid accidental dual-open state.
+            toggleCards.forEach((toggleCard) => {
+                toggleCard.classList.remove('expanded');
+            });
+
+            // Re-open only the clicked one (if it was previously closed).
+            if (shouldExpand) {
+                card.classList.add('expanded');
+            }
+        });
+    });
+
     // Flatten nested objects (e.g., chapter_info.arabic_title -> chapter_info_arabic_title)
     function flattenObject(obj, prefix = '') {
         const result = {};

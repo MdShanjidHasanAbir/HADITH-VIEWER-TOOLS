@@ -392,9 +392,16 @@
         /* ============ ACTION BUTTONS GRID ============ */
         .action-buttons-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 20px;
+            align-items: start;
             margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .action-buttons-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .action-card {
@@ -487,6 +494,156 @@
         .action-card-tagged-folder .action-card-icon {
             background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(168, 85, 247, 0.1));
             color: #9333ea;
+        }
+
+        /* ============ TOGGLE CARD STYLES ============ */
+        .action-card-toggle {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .action-card-toggle:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: transparent;
+        }
+
+        .toggle-card-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 28px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .toggle-card-header:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .toggle-card-header .action-card-icon {
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card-toggle.action-card-files .action-card-icon {
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(16, 185, 129, 0.1));
+            color: #059669;
+        }
+
+        .action-card-toggle.action-card-tagged .action-card-icon {
+            background: linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(245, 158, 11, 0.1));
+            color: #d97706;
+        }
+
+        .toggle-card-header .action-card-content h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .toggle-card-header .action-card-content p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .toggle-arrow {
+            position: absolute;
+            right: 24px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .action-card-toggle.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .toggle-card-options {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            background: var(--bg-tertiary);
+            border-top: 1px solid transparent;
+        }
+
+        .action-card-toggle.expanded .toggle-card-options {
+            max-height: 300px;
+            border-top-color: var(--border-color);
+        }
+
+        .toggle-option {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px 28px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-option:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-option:hover {
+            background: var(--accent-lighter);
+        }
+
+        .toggle-option i {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            background: var(--bg-secondary);
+            color: var(--accent-primary);
+            transition: all 0.2s ease;
+        }
+
+        .action-card-toggle.action-card-tagged .toggle-option i {
+            color: #d97706;
+        }
+
+        .toggle-option:hover i {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .action-card-toggle.action-card-tagged .toggle-option:hover i {
+            background: #d97706;
+            color: white;
+        }
+
+        .toggle-option-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .toggle-option-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .toggle-option-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
         }
 
         .action-card-content h3 {
