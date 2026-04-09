@@ -632,6 +632,112 @@
     line-height: 1.4;
   }
 
+  /* ===== SUBHEADING ===== */
+  .subheading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 25px 0 15px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(212, 165, 116, 0.05) 100%);
+    border-left: 3px solid var(--accent-light);
+    border-radius: 0 6px 6px 0;
+    line-height: 1.4;
+  }
+
+  body.dark-mode .subheading {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.15) 0%, rgba(212, 165, 116, 0.08) 100%);
+  }
+
+  /* ===== NOTES/FOOTNOTES ===== */
+  .note-block {
+    margin: 20px 0;
+    padding: 15px 18px;
+    background: rgba(139, 69, 19, 0.05);
+    border: 1px solid rgba(139, 69, 19, 0.15);
+    border-left: 3px solid var(--accent-light);
+    border-radius: 0 8px 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  body.dark-mode .note-block {
+    background: rgba(212, 165, 116, 0.08);
+    border-color: rgba(212, 165, 116, 0.2);
+    border-left-color: var(--accent-light);
+  }
+
+  .note-block p {
+    margin: 6px 0;
+  }
+
+  /* Note block has no prefix text */
+
+  /* ===== HADITH BLOCK ===== */
+  .hadith-block {
+    margin: 20px 0;
+    padding: 18px 22px;
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.08) 0%, rgba(46, 125, 50, 0.03) 100%);
+    border: 1px solid rgba(46, 125, 50, 0.2);
+    border-left: 4px solid #2e7d32;
+    border-radius: 0 8px 8px 0;
+    font-size: 1.02rem;
+    line-height: 2;
+    color: var(--text-dark);
+  }
+
+  body.dark-mode .hadith-block {
+    background: linear-gradient(135deg, rgba(46, 125, 50, 0.12) 0%, rgba(46, 125, 50, 0.05) 100%);
+    border-color: rgba(46, 125, 50, 0.3);
+  }
+
+  /* ===== COMMENT BLOCK ===== */
+  .comment-block {
+    margin: 15px 0;
+    padding: 12px 16px;
+    background: rgba(25, 118, 210, 0.06);
+    border: 1px solid rgba(25, 118, 210, 0.15);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  body.dark-mode .comment-block {
+    background: rgba(25, 118, 210, 0.1);
+    border-color: rgba(25, 118, 210, 0.25);
+  }
+
+  /* ===== SECTION PREFACE ===== */
+  .section-preface {
+    margin: 15px 0;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 2;
+    color: var(--text-dark);
+    text-align: justify;
+  }
+
+  /* ===== CHAPTER TITLE (for extracted JSON format) ===== */
+  .ch-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    padding: 25px 20px;
+    margin: 30px 0;
+    background: linear-gradient(135deg, rgba(139, 69, 19, 0.08) 0%, rgba(139, 69, 19, 0.03) 100%);
+    border: 2px solid var(--accent-light);
+    border-radius: 12px;
+    line-height: 1.4;
+  }
+
+  body.dark-mode .ch-title {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(212, 165, 116, 0.05) 100%);
+  }
+
   /* ===== CONTENT BLOCKS ===== */
   .bengali-text {
     font-size: 1.05rem;
@@ -965,6 +1071,9 @@
     <button class="sidebar-action primary" id="newProcessBtn" type="button">
       <i class="fa-solid fa-plus"></i> Process New Book
     </button>
+    <button class="sidebar-action" id="directTextBtn" type="button" style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);">
+      <i class="fa-solid fa-book-open-reader"></i> Direct Text Viewer
+    </button>
     <button class="sidebar-action" id="mergeJsonBtn" type="button">
       <i class="fa-solid fa-code-merge"></i> Merge JSON Files
     </button>
@@ -1025,6 +1134,54 @@
             <i class="fa-solid fa-file-code"></i> Download JSON
           </button>
           <button class="download-btn xlsx" id="downloadXlsxBtn">
+            <i class="fa-solid fa-file-excel"></i> Download XLSX
+          </button>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div style="margin: 40px 0; padding: 20px 0; border-top: 2px dashed var(--page-border); border-bottom: 2px dashed var(--page-border); text-align: center;">
+        <span style="background: var(--page-bg); padding: 0 20px; color: var(--text-muted); font-weight: 600;">OR</span>
+      </div>
+
+      <!-- Direct Text Viewer Section -->
+      <h2 style="margin-bottom: 8px;"><i class="fa-solid fa-book-open-reader"></i> Direct Text Viewer (Dua/Hadith Format)</h2>
+      <p class="subtitle">
+        Upload a pre-formatted text file with tags. <strong>Supported tags:</strong><br>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;heading&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;subheading&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;text&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;ar&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;note&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;hadith&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;section_preface&gt;</code>
+        <code style="font-size: 0.85rem; background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 3px;">&lt;page_number&gt;</code><br>
+        No hierarchy JSON needed - the structure is parsed directly from the tags.
+      </p>
+
+      <div class="upload-section">
+        <h3><span class="step-num">1</span> Upload Formatted Text File (.txt)</h3>
+        <label class="upload-box" id="directTxtUploadBox" for="directTxtFileInput">
+          <i class="fa-solid fa-file-alt"></i>
+          <p>Click to select your formatted text file</p>
+          <p class="file-name" id="directTxtFileName"></p>
+          <input type="file" id="directTxtFileInput" accept=".txt">
+        </label>
+      </div>
+
+      <div class="upload-section">
+        <h3><span class="step-num">2</span> View Book</h3>
+        <button class="process-btn" id="directViewBtn" disabled>
+          <i class="fa-solid fa-eye"></i> View Formatted Book
+        </button>
+
+        <div class="process-status" id="directProcessStatus"></div>
+
+        <div class="download-buttons" id="directDownloadButtons" style="display:none;">
+          <button class="download-btn json" id="directDownloadJsonBtn">
+            <i class="fa-solid fa-file-code"></i> Download JSON
+          </button>
+          <button class="download-btn xlsx" id="directDownloadXlsxBtn">
             <i class="fa-solid fa-file-excel"></i> Download XLSX
           </button>
         </div>
@@ -1151,6 +1308,11 @@ const downloadXlsxBtn = document.getElementById('downloadXlsxBtn');
 let txtFileContent = null;
 let jsonHierarchy = null;
 let txtFilename = '';
+
+// Direct Text Viewer State
+let directTxtContent = null;
+let directTxtFilename = '';
+let lastDirectProcessedBook = null;
 
 // ==========================================
 // PROCESSING FUNCTIONS
@@ -1317,6 +1479,265 @@ function processBook(txtContent, hierarchy, bookName) {
 }
 
 // ==========================================
+// DIRECT TEXT VIEWER PARSER (Dua/Hadith Format)
+// ==========================================
+
+function parseDirectTextFormat(txtContent, bookName) {
+  const bookData = {
+    id: bookName.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_').replace(/[^a-z0-9_]/g, ''),
+    name: bookName,
+    chapters: []
+  };
+
+  let currentChapter = null;
+  let currentSection = null;
+  let chapterId = 0;
+  let sectionId = 0;
+  let currentPage = '';
+
+  // Parse text/note content with ar and p tags
+  function parseTextContent(content) {
+    if (!content) return '';
+
+    // Handle <ar> tags - Arabic text
+    content = content.replace(/<ar>([\s\S]*?)<\/ar>/g, (match, arText) => {
+      return `<div class="arabic-text">${arText.trim()}</div>`;
+    });
+
+    // Handle <p> tags - paragraphs
+    content = content.replace(/<p>([\s\S]*?)<\/p>/g, (match, pText) => {
+      return `<div class="bengali-text">${pText.trim()}</div>`;
+    });
+
+    // Any remaining text (not in tags) - wrap in bengali-text
+    const parts = content.split(/(<div class="[^"]+">[\s\S]*?<\/div>)/g);
+    let result = '';
+    for (const part of parts) {
+      if (part.startsWith('<div')) {
+        result += part;
+      } else if (part.trim()) {
+        result += `<div class="bengali-text">${part.trim()}</div>`;
+      }
+    }
+
+    return result || content;
+  }
+
+  // Parse note content
+  function parseNoteContent(content) {
+    if (!content) return '';
+
+    // Handle <p> tags within notes
+    content = content.replace(/<p>([\s\S]*?)<\/p>/g, (match, pText) => {
+      return `<p>${pText.trim()}</p>`;
+    });
+
+    return `<div class="note-block">${content}</div>`;
+  }
+
+  // Parse hadith content
+  function parseHadithContent(content) {
+    if (!content) return '';
+    return `<div class="hadith-block">${content.trim()}</div>`;
+  }
+
+  // Parse comment content
+  function parseCommentContent(content) {
+    if (!content) return '';
+    return `<div class="comment-block">${content.trim()}</div>`;
+  }
+
+  // Parse section_preface content
+  function parseSectionPrefaceContent(content) {
+    if (!content) return '';
+
+    // Handle <ar> tags - Arabic text within preface
+    content = content.replace(/<ar>([\s\S]*?)<\/ar>/g, (match, arText) => {
+      return `<div class="arabic-text">${arText.trim()}</div>`;
+    });
+
+    // Handle <p> tags - paragraphs
+    content = content.replace(/<p>([\s\S]*?)<\/p>/g, (match, pText) => {
+      return `<div class="bengali-text">${pText.trim()}</div>`;
+    });
+
+    // Remaining text
+    const parts = content.split(/(<div class="[^"]+">[\s\S]*?<\/div>)/g);
+    let result = '';
+    for (const part of parts) {
+      if (part.startsWith('<div')) {
+        result += part;
+      } else if (part.trim()) {
+        result += `<div class="bengali-text">${part.trim()}</div>`;
+      }
+    }
+
+    return `<div class="section-preface">${result || content}</div>`;
+  }
+
+  // Function to add content to current context
+  function addContent(type, content, page) {
+    const item = { type, content, page: page || '' };
+
+    if (currentSection) {
+      if (!currentSection.content) currentSection.content = [];
+      currentSection.content.push(item);
+    } else if (currentChapter) {
+      if (!currentChapter.intro_content) currentChapter.intro_content = [];
+      currentChapter.intro_content.push(item);
+    }
+  }
+
+  // Split content by major tags - extended to support more tag types
+  const tagRegex = /<(page_number|page|heading|subheading|text|note|hadith|comment|section_preface|ch_title|section)>([\s\S]*?)<\/\1>/g;
+  let match;
+
+  while ((match = tagRegex.exec(txtContent)) !== null) {
+    const tagName = match[1];
+    const tagContent = match[2].trim();
+
+    if (!tagContent) continue;
+
+    switch (tagName) {
+      case 'page_number':
+      case 'page':
+        currentPage = tagContent;
+        break;
+
+      case 'heading':
+      case 'ch_title':
+        // Create new chapter
+        chapterId++;
+        currentChapter = {
+          id: chapterId,
+          title: tagContent,
+          intro_content: [],
+          sections: []
+        };
+        currentSection = null;
+        bookData.chapters.push(currentChapter);
+        break;
+
+      case 'subheading':
+      case 'section':
+        // Create new section under current chapter
+        if (currentChapter) {
+          sectionId++;
+          currentSection = {
+            id: sectionId,
+            title: tagContent,
+            content: []
+          };
+          currentChapter.sections.push(currentSection);
+        } else {
+          // If no chapter yet, create a default chapter
+          chapterId++;
+          currentChapter = {
+            id: chapterId,
+            title: tagContent,
+            intro_content: [],
+            sections: []
+          };
+          bookData.chapters.push(currentChapter);
+        }
+        break;
+
+      case 'text':
+        addContent('text', parseTextContent(tagContent), currentPage);
+        break;
+
+      case 'note':
+        addContent('note', parseNoteContent(tagContent), currentPage);
+        break;
+
+      case 'hadith':
+        addContent('hadith', parseHadithContent(tagContent), currentPage);
+        break;
+
+      case 'comment':
+        addContent('comment', parseCommentContent(tagContent), currentPage);
+        break;
+
+      case 'section_preface':
+        addContent('section_preface', parseSectionPrefaceContent(tagContent), currentPage);
+        break;
+    }
+  }
+
+  return bookData;
+}
+
+// Render book from direct format data
+function renderDirectFormatBook(book) {
+  currentProcessedBook = book;
+
+  // Update info
+  bookInfo.textContent = `${book.chapters.length} chapters`;
+
+  // Build TOC
+  let tocHtml = '';
+  for (const ch of book.chapters) {
+    tocHtml += `<li class="toc-chapter"><a href="#ch-${ch.id}">${ch.title}</a>`;
+    if (ch.sections && ch.sections.length > 0) {
+      tocHtml += '<ul class="toc-sections">';
+      for (const sec of ch.sections) {
+        tocHtml += `<li><a href="#sec-${sec.id}">${sec.title}</a></li>`;
+      }
+      tocHtml += '</ul>';
+    }
+    tocHtml += '</li>';
+  }
+  toc.innerHTML = tocHtml;
+
+  // Build body
+  let bodyHtml = '';
+  for (const ch of book.chapters) {
+    bodyHtml += `<div class="chapter" id="ch-${ch.id}">`;
+    bodyHtml += `<h1 class="chapter-title">${ch.title}</h1>`;
+
+    // Intro content (before any sections)
+    if (ch.intro_content && ch.intro_content.length > 0) {
+      bodyHtml += '<div class="chapter-intro">';
+      for (const item of ch.intro_content) {
+        if (item.page) {
+          bodyHtml += `<div class="page-marker">${item.page}</div>`;
+        }
+        bodyHtml += item.content || '';
+      }
+      bodyHtml += '</div>';
+    }
+
+    // Sections (subheadings)
+    for (const sec of ch.sections || []) {
+      bodyHtml += `<div class="section" id="sec-${sec.id}">`;
+      bodyHtml += `<h2 class="subheading">${sec.title}</h2>`;
+
+      for (const item of sec.content || []) {
+        if (item.page) {
+          bodyHtml += `<div class="page-marker">${item.page}</div>`;
+        }
+        bodyHtml += item.content || '';
+      }
+
+      bodyHtml += '</div>';
+    }
+
+    bodyHtml += '</div>';
+  }
+  bookContent.innerHTML = bodyHtml;
+
+  // Show export button
+  exportCurrentBtn.style.display = 'flex';
+
+  // Re-attach TOC event listeners
+  attachTocListeners();
+  attachObserver();
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ==========================================
 // RENDERING FUNCTIONS
 // ==========================================
 
@@ -1394,6 +1815,17 @@ function showProcessorView() {
   bookInfo.textContent = '';
   exportCurrentBtn.style.display = 'none';
   bookSelector.value = '__processor__';
+
+  // Reset direct text viewer status (keep the file if loaded)
+  const directStatus = document.getElementById('directProcessStatus');
+  if (directStatus) {
+    directStatus.className = 'process-status';
+    directStatus.innerHTML = '';
+  }
+  const directDlBtns = document.getElementById('directDownloadButtons');
+  if (directDlBtns) {
+    directDlBtns.style.display = 'none';
+  }
 }
 
 // ==========================================
@@ -1569,6 +2001,159 @@ exportCurrentBtn.addEventListener('click', () => {
 });
 
 newProcessBtn.addEventListener('click', showProcessorView);
+
+// Direct Text Button - scroll to direct text section
+document.getElementById('directTextBtn').addEventListener('click', () => {
+  showProcessorView();
+  // Scroll to direct text viewer section
+  setTimeout(() => {
+    const directSection = document.getElementById('directTxtUploadBox');
+    if (directSection) {
+      directSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 100);
+  // Close sidebar on mobile
+  if (window.innerWidth <= 900) {
+    sidebar.classList.remove('open');
+  }
+});
+
+// ==========================================
+// DIRECT TEXT VIEWER HANDLERS
+// ==========================================
+
+const directTxtFileInput = document.getElementById('directTxtFileInput');
+const directTxtUploadBox = document.getElementById('directTxtUploadBox');
+const directTxtFileName = document.getElementById('directTxtFileName');
+const directViewBtn = document.getElementById('directViewBtn');
+const directProcessStatus = document.getElementById('directProcessStatus');
+const directDownloadButtons = document.getElementById('directDownloadButtons');
+const directDownloadJsonBtn = document.getElementById('directDownloadJsonBtn');
+const directDownloadXlsxBtn = document.getElementById('directDownloadXlsxBtn');
+
+directTxtFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    directTxtFilename = file.name.replace('.txt', '');
+    directTxtFileName.textContent = file.name;
+    directTxtUploadBox.classList.add('has-file');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      directTxtContent = event.target.result;
+      directViewBtn.disabled = false;
+    };
+    reader.readAsText(file);
+  }
+});
+
+function showDirectStatus(type, message) {
+  directProcessStatus.className = `process-status show ${type}`;
+  directProcessStatus.innerHTML = `<i class="fa-solid fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'spinner fa-spin'}"></i> ${message}`;
+}
+
+directViewBtn.addEventListener('click', () => {
+  if (!directTxtContent) return;
+
+  showDirectStatus('processing', 'Parsing formatted text...');
+  directDownloadButtons.style.display = 'none';
+
+  setTimeout(() => {
+    try {
+      const bookData = parseDirectTextFormat(directTxtContent, directTxtFilename);
+
+      if (bookData.chapters.length === 0) {
+        showDirectStatus('error', 'No chapters found. Make sure your text file has <heading> tags.');
+        return;
+      }
+
+      // Store in processed books
+      processedBooks[bookData.id] = bookData;
+      lastDirectProcessedBook = bookData;
+
+      // Add to selector if not exists
+      const existingOption = Array.from(bookSelector.options).find(opt => opt.value === bookData.id);
+      if (!existingOption) {
+        const option = document.createElement('option');
+        option.value = bookData.id;
+        option.textContent = `${bookData.name} (direct)`;
+        bookSelector.appendChild(option);
+      }
+
+      showDirectStatus('success', `Successfully parsed "${bookData.name}" with ${bookData.chapters.length} chapters!`);
+      directDownloadButtons.style.display = 'flex';
+
+      // Auto-view the book
+      bookSelector.value = bookData.id;
+      renderDirectFormatBook(bookData);
+
+    } catch (err) {
+      showDirectStatus('error', `Error parsing text: ${err.message}`);
+      console.error(err);
+    }
+  }, 100);
+});
+
+directDownloadJsonBtn.addEventListener('click', () => {
+  if (lastDirectProcessedBook) {
+    downloadJson(lastDirectProcessedBook);
+  }
+});
+
+directDownloadXlsxBtn.addEventListener('click', () => {
+  if (lastDirectProcessedBook) {
+    // Convert to xlsx format
+    downloadDirectXlsx(lastDirectProcessedBook);
+  }
+});
+
+function downloadDirectXlsx(book) {
+  const wb = XLSX.utils.book_new();
+
+  // Chapters sheet
+  const chaptersData = [['chapter_id', 'title']];
+  for (const ch of book.chapters) {
+    chaptersData.push([ch.id, ch.title]);
+  }
+  const wsChapters = XLSX.utils.aoa_to_sheet(chaptersData);
+  XLSX.utils.book_append_sheet(wb, wsChapters, 'Chapters');
+
+  // Sections sheet
+  const sectionsData = [['section_id', 'chapter_id', 'title']];
+  for (const ch of book.chapters) {
+    for (const sec of ch.sections || []) {
+      sectionsData.push([sec.id, ch.id, sec.title]);
+    }
+  }
+  const wsSections = XLSX.utils.aoa_to_sheet(sectionsData);
+  XLSX.utils.book_append_sheet(wb, wsSections, 'Sections');
+
+  // Content sheet - flatten HTML to plain text
+  const contentData = [['chapter_id', 'section_id', 'type', 'page_number', 'content']];
+
+  function stripHtml(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  }
+
+  for (const ch of book.chapters) {
+    // Intro content
+    for (const item of ch.intro_content || []) {
+      contentData.push([ch.id, '', item.type || 'text', item.page || '', stripHtml(item.content || '')]);
+    }
+    // Section content
+    for (const sec of ch.sections || []) {
+      for (const item of sec.content || []) {
+        contentData.push([ch.id, sec.id, item.type || 'text', item.page || '', stripHtml(item.content || '')]);
+      }
+    }
+  }
+  const wsContent = XLSX.utils.aoa_to_sheet(contentData);
+  XLSX.utils.book_append_sheet(wb, wsContent, 'Content');
+
+  XLSX.writeFile(wb, `${book.id}.xlsx`);
+}
 
 // ==========================================
 // PRELOADED BOOKS
