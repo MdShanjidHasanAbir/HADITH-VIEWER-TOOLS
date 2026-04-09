@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('json-file');
     const folderInput = document.getElementById('folder-upload');
     const taggedFileInput = document.getElementById('tagged-json-file');
+    const taggedFolderInput = document.getElementById('tagged-folder-upload');
     const fileInfo = document.getElementById('file-info');
     const fileName = document.getElementById('file-name');
     const fileMeta = document.getElementById('file-meta');
@@ -1299,6 +1300,22 @@ document.addEventListener('DOMContentLoaded', () => {
         folderInput.value = '';
     });
 
+    // Tagged folder upload input listener
+    taggedFolderInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            // Filter only JSON files from the folder
+            const jsonFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.json'));
+            if (jsonFiles.length === 0) {
+                alert('No JSON files found in the selected folder');
+            } else {
+                processMultipleTaggedFiles(jsonFiles);
+            }
+        }
+        // Reset input to allow re-selecting same folder
+        taggedFolderInput.value = '';
+    });
+
     uploadSection.addEventListener('click', (e) => {
         // Labels with a `for` attribute already open the corresponding picker.
         // Avoid triggering a second programmatic click from the parent.
@@ -1306,7 +1323,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.closest('label[for]') ||
             e.target === fileInput ||
             e.target === folderInput ||
-            e.target === taggedFileInput
+            e.target === taggedFileInput ||
+            e.target === taggedFolderInput
         ) {
             return;
         }

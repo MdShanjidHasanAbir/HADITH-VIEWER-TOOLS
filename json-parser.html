@@ -448,6 +448,11 @@
             --card-accent-secondary: #f59e0b;
         }
 
+        .action-card-tagged-folder {
+            --card-accent: #9333ea;
+            --card-accent-secondary: #a855f7;
+        }
+
         .action-card-icon {
             width: 56px;
             height: 56px;
@@ -477,6 +482,11 @@
         .action-card-tagged .action-card-icon {
             background: linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(245, 158, 11, 0.1));
             color: #d97706;
+        }
+
+        .action-card-tagged-folder .action-card-icon {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(168, 85, 247, 0.1));
+            color: #9333ea;
         }
 
         .action-card-content h3 {
@@ -1305,42 +1315,70 @@
 
         <!-- ACTION BUTTONS -->
         <section class="action-buttons-grid">
-            <label for="json-file" class="action-card action-card-files">
-                <div class="action-card-icon">
-                    <i class="fa-solid fa-file-code"></i>
+            <!-- Standard JSON Toggle Card -->
+            <div class="action-card-toggle action-card-files">
+                <div class="toggle-card-header" id="toggle-standard-json">
+                    <div class="action-card-icon">
+                        <i class="fa-solid fa-file-code"></i>
+                    </div>
+                    <div class="action-card-content">
+                        <h3>Standard JSON</h3>
+                        <p>Import regular JSON files or folders</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-down toggle-arrow"></i>
                 </div>
-                <div class="action-card-content">
-                    <h3>Select JSON Files</h3>
-                    <p>Choose multiple JSON files from your computer to convert</p>
+                <div class="toggle-card-options" id="options-standard-json">
+                    <label for="json-file" class="toggle-option">
+                        <i class="fa-solid fa-file-code"></i>
+                        <div class="toggle-option-content">
+                            <span class="toggle-option-title">Select JSON Files</span>
+                            <span class="toggle-option-desc">Choose multiple JSON files from your computer</span>
+                        </div>
+                    </label>
+                    <label for="folder-upload" class="toggle-option">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <div class="toggle-option-content">
+                            <span class="toggle-option-title">Select Folder</span>
+                            <span class="toggle-option-desc">Import all JSON files from a folder</span>
+                        </div>
+                    </label>
                 </div>
-                <i class="fa-solid fa-chevron-right action-card-arrow"></i>
-            </label>
+            </div>
 
-            <label for="folder-upload" class="action-card action-card-folder">
-                <div class="action-card-icon">
-                    <i class="fa-solid fa-folder-open"></i>
+            <!-- Tagged JSON Toggle Card -->
+            <div class="action-card-toggle action-card-tagged">
+                <div class="toggle-card-header" id="toggle-tagged-json">
+                    <div class="action-card-icon">
+                        <i class="fa-solid fa-tags"></i>
+                    </div>
+                    <div class="action-card-content">
+                        <h3>Tagged JSON Format</h3>
+                        <p>Import JSON files with special tagged structure</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-down toggle-arrow"></i>
                 </div>
-                <div class="action-card-content">
-                    <h3>Select Folder</h3>
-                    <p>Import all JSON files from an entire folder at once</p>
+                <div class="toggle-card-options" id="options-tagged-json">
+                    <label for="tagged-json-file" class="toggle-option">
+                        <i class="fa-solid fa-file-code"></i>
+                        <div class="toggle-option-content">
+                            <span class="toggle-option-title">Select Tagged Files</span>
+                            <span class="toggle-option-desc">Choose tagged JSON files from your computer</span>
+                        </div>
+                    </label>
+                    <label for="tagged-folder-upload" class="toggle-option">
+                        <i class="fa-solid fa-folder-tree"></i>
+                        <div class="toggle-option-content">
+                            <span class="toggle-option-title">Select Tagged Folder</span>
+                            <span class="toggle-option-desc">Import all tagged JSON files from a folder</span>
+                        </div>
+                    </label>
                 </div>
-                <i class="fa-solid fa-chevron-right action-card-arrow"></i>
-            </label>
-
-            <label for="tagged-json-file" class="action-card action-card-tagged">
-                <div class="action-card-icon">
-                    <i class="fa-solid fa-tags"></i>
-                </div>
-                <div class="action-card-content">
-                    <h3>Tagged JSON Format</h3>
-                    <p>Import JSON files with special tagged structure</p>
-                </div>
-                <i class="fa-solid fa-chevron-right action-card-arrow"></i>
-            </label>
+            </div>
 
             <input type="file" id="json-file" accept=".json" multiple>
             <input type="file" id="folder-upload" webkitdirectory multiple>
             <input type="file" id="tagged-json-file" accept=".json" multiple>
+            <input type="file" id="tagged-folder-upload" webkitdirectory multiple>
         </section>
 
         <!-- FILES LIST PANEL -->
