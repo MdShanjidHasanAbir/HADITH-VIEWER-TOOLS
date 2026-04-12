@@ -1184,6 +1184,9 @@
           <button class="download-btn xlsx" id="directDownloadXlsxBtn">
             <i class="fa-solid fa-file-excel"></i> Download XLSX
           </button>
+          <button class="download-btn xlsx" id="directDownloadBookXlsxBtn" style="background: #1565c0;">
+            <i class="fa-solid fa-book"></i> Download Book XLSX
+          </button>
         </div>
       </div>
 
@@ -2107,6 +2110,13 @@ directDownloadXlsxBtn.addEventListener('click', () => {
   }
 });
 
+const directDownloadBookXlsxBtn = document.getElementById('directDownloadBookXlsxBtn');
+directDownloadBookXlsxBtn.addEventListener('click', () => {
+  if (lastDirectProcessedBook) {
+    downloadDirectBookXlsx(lastDirectProcessedBook);
+  }
+});
+
 function downloadDirectXlsx(book) {
   const wb = XLSX.utils.book_new();
 
@@ -2153,6 +2163,71 @@ function downloadDirectXlsx(book) {
   XLSX.utils.book_append_sheet(wb, wsContent, 'Content');
 
   XLSX.writeFile(wb, `${book.id}.xlsx`);
+}
+
+// Download Book XLSX with heading, subheading, content (text+notes), page_num format
+function downloadDirectBookXlsx(book) {
+  const wb = XLSX.utils.book_new();
+
+  // Helper to strip HTML tags
+  function stripHtml(html) {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    return temp.textContent || temp.innerText || '';
+  }
+
+  // Helper to get first page number from content items
+  function getFirstPageNum(contentItems) {
+    for (const item of contentItems || []) {
+      if (item.page && item.page.trim()) {
+        return item.page.trim();
+      }
+    }
+    return '';
+  }
+
+  // Helper to combine text and notes content
+  function combineContent(contentItems) {
+    const parts = [];
+    for (const item of contentItems || []) {
+      if (item.content) {
+        parts.push(stripHtml(item.content));
+      }
+    }
+    return parts.join('\n\n');
+  }
+
+  // Book content sheet with heading, subheading, content, page_num columns
+  const bookData = [['heading', 'subheading', 'content', 'page_num']];
+
+  for (const ch of book.chapters) {
+    const chapterTitle = ch.title || '';
+
+    // If chapter has intro content (content before any sections)
+    if (ch.intro_content && ch.intro_content.length > 0) {
+      const firstPage = getFirstPageNum(ch.intro_content);
+      const content = combineContent(ch.intro_content);
+      bookData.push([chapterTitle, '', content, firstPage]);
+    }
+
+    // Process sections (subheadings)
+    for (const sec of ch.sections || []) {
+      const subheadingTitle = sec.title || '';
+      const firstPage = getFirstPageNum(sec.content);
+      const content = combineContent(sec.content);
+      bookData.push([chapterTitle, subheadingTitle, content, firstPage]);
+    }
+
+    // If chapter has no intro content and no sections, still add the heading
+    if ((!ch.intro_content || ch.intro_content.length === 0) && (!ch.sections || ch.sections.length === 0)) {
+      bookData.push([chapterTitle, '', '', '']);
+    }
+  }
+
+  const wsBook = XLSX.utils.aoa_to_sheet(bookData);
+  XLSX.utils.book_append_sheet(wb, wsBook, 'Book');
+
+  XLSX.writeFile(wb, `${book.id}_book.xlsx`);
 }
 
 // ==========================================
